@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 出入库管理系统</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#3b82f6',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        light: '#f3f4f6',
+                        dark: '#1f2937'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .bg-gradient-primary {
+                background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .transition-all {
+                transition-property: all;
+                transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+                transition-duration: 150ms;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <!-- 登录卡片 -->
+        <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+            <!-- 顶部渐变背景 -->
+            <div class="bg-gradient-primary h-2"></div>
+            
+            <!-- 登录表单 -->
+            <div class="p-8">
+                <!-- Logo和标题 -->
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa fa-cubes text-white text-2xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-800 text-shadow">出入库管理系统</h1>
+                    <p class="text-gray-600 mt-1">请登录以继续</p>
+                </div>
+                
+                <!-- 表单 -->
+                <form id="loginForm" class="space-y-6">
+                    <!-- 用户名 -->
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fa fa-user text-gray-400"></i>
+                            </div>
+                            <input type="text" id="username" name="username" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm" placeholder="请输入用户名" required>
+                        </div>
+                    </div>
+                    
+                    <!-- 密码 -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fa fa-lock text-gray-400"></i>
+                            </div>
+                            <input type="password" id="password" name="password" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm" placeholder="请输入密码" required>
+                            <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
+                                <i class="fa fa-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 记住我 -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input id="remember" name="remember" type="checkbox" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                            <label for="remember" class="ml-2 block text-sm text-gray-700">记住我</label>
+                        </div>
+                        <a href="#" class="text-sm text-primary hover:text-blue-700">忘记密码?</a>
+                    </div>
+                    
+                    <!-- 登录按钮 -->
+                    <div>
+                        <button type="submit" id="loginBtn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all">
+                            <span id="loginText">登录</span>
+                            <span id="loginLoading" class="hidden">
+                                <i class="fa fa-spinner fa-spin ml-2"></i>
+                            </span>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- 错误信息 -->
+                <div id="errorMessage" class="mt-4 hidden">
+                    <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fa fa-exclamation-circle text-red-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-red-700" id="errorText"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 底部 -->
+            <div class="px-8 py-4 bg-gray-50 border-t border-gray-200">
+                <div class="text-center text-sm text-gray-600">
+                    © 2024 出入库管理系统 - 版权所有
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 切换密码可见性
+        const togglePassword = document.getElementById('togglePassword');
+        const password = document.getElementById('password');
+        
+        togglePassword.addEventListener('click', () => {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            
+            // 切换图标
+            const icon = togglePassword.querySelector('i');
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        });
+        
+        // 登录表单提交
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginText = document.getElementById('loginText');
+        const loginLoading = document.getElementById('loginLoading');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const remember = document.getElementById('remember').checked;
+            
+            // 简单验证
+            if (!username || !password) {
+                showError('用户名和密码不能为空');
+                return;
+            }
+            
+            // 显示加载状态
+            loginBtn.disabled = true;
+            loginText.classList.add('hidden');
+            loginLoading.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            
+            try {
+                // 模拟登录请求
+                // 在实际应用中，这里应该发送真实的API请求
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // 模拟登录成功（实际应用中应该根据API响应判断）
+                if (username === 'admin' && password === 'admin123') {
+                    // 保存token到localStorage
+                    localStorage.setItem('token', 'mock-jwt-token');
+                    localStorage.setItem('user', JSON.stringify({
+                        id: 1,
+                        username: 'admin',
+                        name: '系统管理员',
+                        role: 'admin',
+                        permissions: [
+                            'user:view', 'user:create', 'user:edit', 'user:delete', 'user:reset_password',
+                            'material:view', 'material:create', 'material:edit', 'material:delete', 'material:import', 'material:export',
+                            'warehouse:view', 'warehouse:create', 'warehouse:edit', 'warehouse:delete',
+                            'inventory:view', 'inventory:adjust', 'inventory:export',
+                            'transaction:inbound', 'transaction:outbound', 'transaction:transfer', 'transaction:view', 'transaction:export',
+                            'report:view', 'report:export',
+                            'system:backup', 'system:restore', 'system:setting'
+                        ]
+                    }));
+                    
+                    // 记住我功能
+                    if (remember) {
+                        localStorage.setItem('rememberUsername', username);
+                    } else {
+                        localStorage.removeItem('rememberUsername');
+                    }
+                    
+                    // 跳转到主页
+                    window.location.href = 'index.html';
+                } else {
+                    showError('用户名或密码错误');
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                showError('登录失败，请稍后重试');
+            } finally {
+                // 恢复按钮状态
+                loginBtn.disabled = false;
+                loginText.classList.remove('hidden');
+                loginLoading.classList.add('hidden');
+            }
+        });
+        
+        // 显示错误信息
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+            
+            // 滚动到错误信息
+            errorMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // 页面加载时检查记住的用户名
+        document.addEventListener('DOMContentLoaded', () => {
+            const rememberedUsername = localStorage.getItem('rememberUsername');
+            if (rememberedUsername) {
+                document.getElementById('username').value = rememberedUsername;
+                document.getElementById('remember').checked = true;
+            }
+        });
+        
+        // 按Enter键登录
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !loginBtn.disabled) {
+                loginForm.dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>

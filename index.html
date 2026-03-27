@@ -1,0 +1,3392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出入库管理系统</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#3b82f6',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        light: '#f3f4f6',
+                        dark: '#1f2937'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .sidebar-active {
+                @apply bg-blue-700 text-white;
+            }
+            .transition-all {
+                transition-property: all;
+                transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+                transition-duration: 150ms;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="flex h-screen overflow-hidden">
+        <!-- 侧边导航栏 -->
+        <aside class="bg-primary w-64 flex-shrink-0 hidden md:block">
+            <div class="h-full flex flex-col">
+                <!-- 系统标题 -->
+                <div class="flex items-center justify-center h-16 border-b border-blue-700">
+                    <h1 class="text-xl font-bold text-white">出入库管理系统</h1>
+                </div>
+                
+                <!-- 导航菜单 -->
+                <nav class="flex-1 overflow-y-auto py-4">
+                    <ul>
+                        <li class="mb-1">
+                            <a href="#dashboard" class="flex items-center px-6 py-3 text-white hover:bg-blue-700 sidebar-active" data-page="dashboard">
+                                <i class="fa fa-dashboard w-5 h-5 mr-3"></i>
+                                <span>仪表盘</span>
+                            </a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="#materials" class="flex items-center px-6 py-3 text-white hover:bg-blue-700" data-page="materials">
+                                <i class="fa fa-cubes w-5 h-5 mr-3"></i>
+                                <span>物料管理</span>
+                            </a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="#categories" class="flex items-center px-6 py-3 text-white hover:bg-blue-700" data-page="categories">
+                                <i class="fa fa-tags w-5 h-5 mr-3"></i>
+                                <span>分类管理</span>
+                            </a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="#inventory" class="flex items-center px-6 py-3 text-white hover:bg-blue-700" data-page="inventory">
+                                <i class="fa fa-list w-5 h-5 mr-3"></i>
+                                <span>库存管理</span>
+                            </a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="#transactions" class="flex items-center px-6 py-3 text-white hover:bg-blue-700" data-page="transactions">
+                                <i class="fa fa-exchange w-5 h-5 mr-3"></i>
+                                <span>出入库操作</span>
+                            </a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="#warehouses" class="flex items-center px-6 py-3 text-white hover:bg-blue-700" data-page="warehouses">
+                                <i class="fa fa-building w-5 h-5 mr-3"></i>
+                                <span>仓库管理</span>
+                            </a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="#reports" class="flex items-center px-6 py-3 text-white hover:bg-blue-700" data-page="reports">
+                                <i class="fa fa-bar-chart w-5 h-5 mr-3"></i>
+                                <span>报表中心</span>
+                            </a>
+                        </li>
+                        <!-- 系统设置菜单 -->
+                        <li class="mb-1">
+                            <a href="#settings" class="flex items-center justify-between px-6 py-3 text-white hover:bg-blue-700" data-page="settings">
+                                <div class="flex items-center">
+                                    <i class="fa fa-cog w-5 h-5 mr-3"></i>
+                                    <span>系统设置</span>
+                                </div>
+                                <i class="fa fa-angle-down text-xs"></i>
+                            </a>
+                            <ul class="pl-8 hidden" id="settingsSubmenu">
+                                <li class="mb-1">
+                                    <a href="#users" class="flex items-center px-6 py-2 text-white hover:bg-blue-700" data-page="users">
+                                        <i class="fa fa-users w-5 h-5 mr-3"></i>
+                                        <span>用户管理</span>
+                                    </a>
+                                </li>
+                                <li class="mb-1">
+                                    <a href="#backups" class="flex items-center px-6 py-2 text-white hover:bg-blue-700" data-page="backups">
+                                        <i class="fa fa-database w-5 h-5 mr-3"></i>
+                                        <span>数据备份恢复</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </nav>
+                
+                <!-- 用户信息 -->
+                <div class="p-4 border-t border-blue-700">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-blue-800 font-bold">
+                            管
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-white">管理员</p>
+                            <p class="text-xs text-blue-200">admin@example.com</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- 移动端侧边栏切换按钮 -->
+        <div class="md:hidden fixed bottom-4 right-4 z-50">
+            <button id="sidebarToggle" class="bg-primary text-white p-3 rounded-full shadow-lg">
+                <i class="fa fa-bars"></i>
+            </button>
+        </div>
+        
+        <!-- 移动端侧边栏 -->
+        <div id="mobileSidebar" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 hidden">
+            <div class="bg-primary w-64 h-full overflow-y-auto transform transition-transform -translate-x-full" id="mobileSidebarContent">
+                <!-- 移动端侧边栏内容 (与桌面端相同) -->
+                <div class="h-full flex flex-col">
+                    <div class="flex items-center justify-between h-16 border-b border-blue-700 px-4">
+                        <h1 class="text-xl font-bold text-white">出入库管理系统</h1>
+                        <button id="closeSidebar" class="text-white">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <nav class="flex-1 overflow-y-auto py-4">
+                        <ul>
+                            <li class="mb-1">
+                                <a href="#dashboard" class="flex items-center px-6 py-3 text-white hover:bg-blue-700 mobile-nav-item" data-page="dashboard">
+                                    <i class="fa fa-dashboard w-5 h-5 mr-3"></i>
+                                    <span>仪表盘</span>
+                                </a>
+                            </li>
+                            <li class="mb-1">
+                                <a href="#materials" class="flex items-center px-6 py-3 text-white hover:bg-blue-700 mobile-nav-item" data-page="materials">
+                                    <i class="fa fa-cubes w-5 h-5 mr-3"></i>
+                                    <span>物料管理</span>
+                                </a>
+                            </li>
+                            <li class="mb-1">
+                                <a href="#inventory" class="flex items-center px-6 py-3 text-white hover:bg-blue-700 mobile-nav-item" data-page="inventory">
+                                    <i class="fa fa-list w-5 h-5 mr-3"></i>
+                                    <span>库存管理</span>
+                                </a>
+                            </li>
+                            <li class="mb-1">
+                                <a href="#transactions" class="flex items-center px-6 py-3 text-white hover:bg-blue-700 mobile-nav-item" data-page="transactions">
+                                    <i class="fa fa-exchange w-5 h-5 mr-3"></i>
+                                    <span>出入库操作</span>
+                                </a>
+                            </li>
+                            <li class="mb-1">
+                                <a href="#warehouses" class="flex items-center px-6 py-3 text-white hover:bg-blue-700 mobile-nav-item" data-page="warehouses">
+                                    <i class="fa fa-building w-5 h-5 mr-3"></i>
+                                    <span>仓库管理</span>
+                                </a>
+                            </li>
+                            <li class="mb-1">
+                                <a href="#reports" class="flex items-center px-6 py-3 text-white hover:bg-blue-700 mobile-nav-item" data-page="reports">
+                                    <i class="fa fa-bar-chart w-5 h-5 mr-3"></i>
+                                    <span>报表中心</span>
+                                </a>
+                            </li>
+                            <!-- 移动端系统设置菜单 -->
+                            <li class="mb-1">
+                                <a href="#settings" class="flex items-center justify-between px-6 py-3 text-white hover:bg-blue-700 mobile-nav-item" data-page="settings">
+                                    <div class="flex items-center">
+                                        <i class="fa fa-cog w-5 h-5 mr-3"></i>
+                                        <span>系统设置</span>
+                                    </div>
+                                    <i class="fa fa-angle-down text-xs"></i>
+                                </a>
+                                <ul class="pl-8 hidden" id="mobileSettingsSubmenu">
+                                    <li class="mb-1">
+                                        <a href="#users" class="flex items-center px-6 py-2 text-white hover:bg-blue-700 mobile-nav-item" data-page="users">
+                                            <i class="fa fa-users w-5 h-5 mr-3"></i>
+                                            <span>用户管理</span>
+                                        </a>
+                                    </li>
+                                    <li class="mb-1">
+                                        <a href="#backups" class="flex items-center px-6 py-2 text-white hover:bg-blue-700 mobile-nav-item" data-page="backups">
+                                            <i class="fa fa-database w-5 h-5 mr-3"></i>
+                                            <span>数据备份恢复</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </nav>
+                    
+                    <div class="p-4 border-t border-blue-700">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-blue-800 font-bold">
+                                管
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-white">管理员</p>
+                                <p class="text-xs text-blue-200">admin@example.com</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主内容区域 -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- 顶部导航栏 -->
+            <header class="bg-white shadow-sm z-10">
+                <div class="px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center justify-between h-16">
+                        <!-- 搜索框 -->
+                        <div class="flex-1 max-w-md">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa fa-search text-gray-400"></i>
+                                </div>
+                                <input id="searchInput" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm" placeholder="搜索物料、库存..." type="search">
+                            </div>
+                        </div>
+                        
+                        <!-- 右侧工具栏 -->
+                        <div class="flex items-center">
+                            <!-- 通知按钮 -->
+                            <button class="p-2 rounded-full text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary relative">
+                                <i class="fa fa-bell"></i>
+                                <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white"></span>
+                            </button>
+                            
+                            <!-- 设置按钮 -->
+                            <button class="ml-4 p-2 rounded-full text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                                <i class="fa fa-cog"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- 页面内容区域 -->
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-100">
+                <!-- 页面容器 -->
+                <div id="pageContainer">
+                    <!-- 仪表盘页面 -->
+                    <div id="dashboard" class="page active">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">仪表盘</h2>
+                            <p class="text-gray-600">欢迎回来，管理员！这是您的库存概览。</p>
+                        </div>
+                        
+                        <!-- 统计卡片 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                            <!-- 物料总数 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-blue-100 text-primary">
+                                        <i class="fa fa-cubes fa-2x"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-500">物料总数</p>
+                                        <p class="text-2xl font-semibold text-gray-800" id="totalMaterials">0</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <div class="flex items-center">
+                                        <span class="text-green-500 text-sm font-medium flex items-center">
+                                            <i class="fa fa-arrow-up mr-1"></i> 12%
+                                        </span>
+                                        <span class="text-gray-500 text-sm ml-2">较上月</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 库存总量 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-green-100 text-success">
+                                        <i class="fa fa-list fa-2x"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-500">库存总量</p>
+                                        <p class="text-2xl font-semibold text-gray-800" id="totalInventory">0</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <div class="flex items-center">
+                                        <span class="text-green-500 text-sm font-medium flex items-center">
+                                            <i class="fa fa-arrow-up mr-1"></i> 5%
+                                        </span>
+                                        <span class="text-gray-500 text-sm ml-2">较上月</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 入库记录 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                                        <i class="fa fa-sign-in fa-2x"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-500">本月入库</p>
+                                        <p class="text-2xl font-semibold text-gray-800" id="monthlyInbound">0</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <div class="flex items-center">
+                                        <span class="text-green-500 text-sm font-medium flex items-center">
+                                            <i class="fa fa-arrow-up mr-1"></i> 8%
+                                        </span>
+                                        <span class="text-gray-500 text-sm ml-2">较上月</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 出库记录 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-red-100 text-danger">
+                                        <i class="fa fa-sign-out fa-2x"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-500">本月出库</p>
+                                        <p class="text-2xl font-semibold text-gray-800" id="monthlyOutbound">0</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <div class="flex items-center">
+                                        <span class="text-red-500 text-sm font-medium flex items-center">
+                                            <i class="fa fa-arrow-down mr-1"></i> 3%
+                                        </span>
+                                        <span class="text-gray-500 text-sm ml-2">较上月</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 图表区域 -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <!-- 出入库趋势图 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-medium text-gray-800 mb-4">出入库趋势</h3>
+                                <div class="h-80">
+                                    <canvas id="inOutTrendChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- 库存分类分布图 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-medium text-gray-800 mb-4">库存分类分布</h3>
+                                <div class="h-80">
+                                    <canvas id="inventoryCategoryChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 库存预警 -->
+                        <div class="bg-white rounded-lg shadow mb-6">
+                            <div class="px-6 py-4 border-b border-gray-200">
+                                <h3 class="text-lg font-medium text-gray-800">库存预警</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">物料名称</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">规格</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">当前库存</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">预警线</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200" id="warningTableBody">
+                                        <!-- 预警数据将通过JavaScript动态填充 -->
+                                        <tr>
+                                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">暂无预警数据</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- 最近操作记录 -->
+                        <div class="bg-white rounded-lg shadow">
+                            <div class="px-6 py-4 border-b border-gray-200">
+                                <h3 class="text-lg font-medium text-gray-800">最近操作记录</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">时间</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作类型</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">物料名称</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">数量</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作人</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">备注</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200" id="recentTransactionsTableBody">
+                                        <!-- 最近操作记录将通过JavaScript动态填充 -->
+                                        <tr>
+                                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">暂无操作记录</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 物料管理页面 -->
+                    <div id="materials" class="page hidden">
+                        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">物料管理</h2>
+                                <p class="text-gray-600">管理所有物料信息</p>
+                            </div>
+                            <div class="mt-4 sm:mt-0">
+                                <button id="addMaterialBtn" class="bg-primary hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+                                    <i class="fa fa-plus mr-2"></i> 添加物料
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 筛选和搜索 -->
+                        <div class="bg-white p-4 rounded-lg shadow mb-6">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">分类</label>
+                                    <select id="materialCategoryFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                                        <option value="">全部分类</option>
+                                        <option value="电子元件">电子元件</option>
+                                        <option value="机械零件">机械零件</option>
+                                        <option value="实验耗材">实验耗材</option>
+                                        <option value="办公用品">办公用品</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">搜索</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <i class="fa fa-search text-gray-400"></i>
+                                        </div>
+                                        <input id="materialSearchInput" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm" placeholder="搜索物料名称、规格..." type="search">
+                                    </div>
+                                </div>
+                                <div class="md:col-span-2 flex items-end">
+                                    <button id="filterMaterialsBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md mr-2">
+                                        <i class="fa fa-filter mr-1"></i> 筛选
+                                    </button>
+                                    <button id="resetFilterBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md">
+                                        <i class="fa fa-refresh mr-1"></i> 重置
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 物料列表 -->
+                        <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <input type="checkbox" class="rounded text-primary focus:ring-primary">
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">物料编号</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">物料名称</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">分类</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">规格</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">单位</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">单价</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">当前库存</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">预警线</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200" id="materialsTableBody">
+                                        <!-- 物料数据将通过JavaScript动态填充 -->
+                                        <tr>
+                                            <td colspan="10" class="px-6 py-4 text-center text-sm text-gray-500">暂无物料数据</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                                <div class="flex-1 flex justify-between sm:hidden">
+                                    <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                        上一页
+                                    </a>
+                                    <a href="#" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                        下一页
+                                    </a>
+                                </div>
+                                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-700">
+                                            显示 <span class="font-medium">1</span> 到 <span class="font-medium">10</span> 条，共 <span class="font-medium">97</span> 条记录
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                            <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                                <span class="sr-only">上一页</span>
+                                                <i class="fa fa-chevron-left"></i>
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                                1
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary text-sm font-medium text-white">
+                                                2
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                                3
+                                            </a>
+                                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                                ...
+                                            </span>
+                                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                                8
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                                9
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                                10
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                                <span class="sr-only">下一页</span>
+                                                <i class="fa fa-chevron-right"></i>
+                                            </a>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 库存管理页面 -->
+                    <div id="inventory" class="page hidden">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">库存管理</h2>
+                            <p class="text-gray-600">查看和管理当前库存状态</p>
+                        </div>
+                        
+                        <!-- 库存概览卡片 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-blue-100 text-primary">
+                                        <i class="fa fa-check-circle fa-2x"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-500">正常库存</p>
+                                        <p class="text-2xl font-semibold text-gray-800" id="normalInventoryCount">0</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-yellow-100 text-warning">
+                                        <i class="fa fa-exclamation-triangle fa-2x"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-500">库存预警</p>
+                                        <p class="text-2xl font-semibold text-gray-800" id="warningInventoryCount">0</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-red-100 text-danger">
+                                        <i class="fa fa-times-circle fa-2x"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-500">库存不足</p>
+                                        <p class="text-2xl font-semibold text-gray-800" id="outOfStockCount">0</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                                        <i class="fa fa-money fa-2x"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-500">库存总值</p>
+                                        <p class="text-2xl font-semibold text-gray-800" id="totalInventoryValue">¥0</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 库存列表 -->
+                        <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <div class="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                                <h3 class="text-lg font-medium text-gray-800 mb-2 sm:mb-0">库存列表</h3>
+                                <div class="flex items-center">
+                                    <div class="relative mr-4">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <i class="fa fa-search text-gray-400"></i>
+                                        </div>
+                                        <input id="inventorySearchInput" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm" placeholder="搜索物料名称、规格..." type="search">
+                                    </div>
+                                    <button id="exportInventoryBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md flex items-center">
+                                        <i class="fa fa-download mr-2"></i> 导出
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">物料编号</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">物料名称</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">规格</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">仓库</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">当前库存</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">预警线</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最后更新</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200" id="inventoryTableBody">
+                                        <!-- 库存数据将通过JavaScript动态填充 -->
+                                        <tr>
+                                            <td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500">暂无库存数据</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                                <!-- 分页控件 -->
+                                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-700">
+                                            显示 <span class="font-medium">1</span> 到 <span class="font-medium">10</span> 条，共 <span class="font-medium">97</span> 条记录
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                            <!-- 分页按钮 -->
+                                            <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                                <span class="sr-only">上一页</span>
+                                                <i class="fa fa-chevron-left"></i>
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary text-sm font-medium text-white">
+                                                1
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                                2
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                                3
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                                <span class="sr-only">下一页</span>
+                                                <i class="fa fa-chevron-right"></i>
+                                            </a>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 出入库操作页面 -->
+                    <div id="transactions" class="page hidden">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">出入库操作</h2>
+                            <p class="text-gray-600">记录和管理物料的出入库操作</p>
+                        </div>
+                        
+                        <!-- 操作选项卡 -->
+                        <div class="mb-6 border-b border-gray-200">
+                            <nav class="-mb-px flex space-x-8">
+                                <a href="#" class="border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="inbound">
+                                    入库
+                                </a>
+                                <a href="#" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="outbound">
+                                    出库
+                                </a>
+                                <a href="#" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="transfer">
+                                    调拨
+                                </a>
+                                <a href="#" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="history">
+                                    历史记录
+                                </a>
+                            </nav>
+                        </div>
+                        
+                        <!-- 入库表单 -->
+                        <div id="inboundTab" class="tab-content active">
+                            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                                <h3 class="text-lg font-medium text-gray-800 mb-4">新增入库</h3>
+                                <form id="inboundForm">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label for="inboundMaterial" class="block text-sm font-medium text-gray-700 mb-1">物料名称 <span class="text-red-500">*</span></label>
+                                            <div class="relative">
+                                                <select id="inboundMaterial" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                                    <option value="">请选择物料</option>
+                                                    <!-- 物料选项将通过JavaScript动态填充 -->
+                                                </select>
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <i class="fa fa-chevron-down text-gray-400"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label for="inboundWarehouse" class="block text-sm font-medium text-gray-700 mb-1">入库仓库 <span class="text-red-500">*</span></label>
+                                            <div class="relative">
+                                                <select id="inboundWarehouse" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                                    <option value="">请选择仓库</option>
+                                                    <!-- 仓库选项将通过JavaScript动态填充 -->
+                                                </select>
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <i class="fa fa-chevron-down text-gray-400"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label for="inboundQuantity" class="block text-sm font-medium text-gray-700 mb-1">入库数量 <span class="text-red-500">*</span></label>
+                                            <input type="number" id="inboundQuantity" name="quantity" min="1" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                                        </div>
+                                        <div>
+                                            <label for="inboundBatch" class="block text-sm font-medium text-gray-700 mb-1">批次号</label>
+                                            <input type="text" id="inboundBatch" name="batch" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                                        </div>
+                                        <div>
+                                            <label for="inboundOperator" class="block text-sm font-medium text-gray-700 mb-1">操作人 <span class="text-red-500">*</span></label>
+                                            <input type="text" id="inboundOperator" name="operator" value="管理员" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                                        </div>
+                                        <div>
+                                            <label for="inboundDate" class="block text-sm font-medium text-gray-700 mb-1">入库日期 <span class="text-red-500">*</span></label>
+                                            <input type="date" id="inboundDate" name="date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label for="inboundRemark" class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                                            <textarea id="inboundRemark" name="remark" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="mt-6 flex justify-end">
+                                        <button type="button" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary mr-3">
+                                            取消
+                                        </button>
+                                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                                            提交
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- 条码扫描区域 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-medium text-gray-800 mb-4">条码扫描</h3>
+                                <div class="flex flex-col md:flex-row items-center">
+                                    <div class="md:w-1/2 mb-4 md:mb-0 md:pr-6">
+                                        <div class="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg flex items-center justify-center">
+                                            <div id="scanArea" class="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg w-full">
+                                                <i class="fa fa-qrcode text-4xl text-gray-400 mb-4"></i>
+                                                <p class="text-gray-500 mb-4">点击按钮模拟扫描条码</p>
+                                                <button id="simulateScanBtn" class="bg-primary hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md">
+                                                    模拟扫描
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="md:w-1/2 md:pl-6">
+                                        <h4 class="text-md font-medium text-gray-800 mb-2">扫描结果</h4>
+                                        <div class="bg-gray-50 p-4 rounded-lg">
+                                            <div class="mb-2">
+                                                <span class="text-sm font-medium text-gray-500">物料编号:</span>
+                                                <span id="scanMaterialId" class="ml-2 text-sm">-</span>
+                                            </div>
+                                            <div class="mb-2">
+                                                <span class="text-sm font-medium text-gray-500">物料名称:</span>
+                                                <span id="scanMaterialName" class="ml-2 text-sm">-</span>
+                                            </div>
+                                            <div class="mb-2">
+                                                <span class="text-sm font-medium text-gray-500">规格:</span>
+                                                <span id="scanSpecification" class="ml-2 text-sm">-</span>
+                                            </div>
+                                            <div class="mb-2">
+                                                <span class="text-sm font-medium text-gray-500">当前库存:</span>
+                                                <span id="scanCurrentStock" class="ml-2 text-sm">-</span>
+                                            </div>
+                                            <div class="mt-4">
+                                                <label for="scanQuantity" class="block text-sm font-medium text-gray-700 mb-1">数量</label>
+                                                <input type="number" id="scanQuantity" min="1" value="1" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                                            </div>
+                                            <div class="mt-4">
+                                                <button id="confirmScanBtn" class="w-full bg-primary hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md" disabled>
+                                                    确认入库
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 出库表单 -->
+                        <div id="outboundTab" class="tab-content hidden">
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-medium text-gray-800 mb-4">新增出库</h3>
+                                <form id="outboundForm">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label for="outboundMaterial" class="block text-sm font-medium text-gray-700 mb-1">物料名称 <span class="text-red-500">*</span></label>
+                                            <div class="relative">
+                                                <select id="outboundMaterial" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                                    <option value="">请选择物料</option>
+                                                    <!-- 物料选项将通过JavaScript动态填充 -->
+                                                </select>
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <i class="fa fa-chevron-down text-gray-400"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label for="outboundWarehouse" class="block text-sm font-medium text-gray-700 mb-1">出库仓库 <span class="text-red-500">*</span></label>
+                                            <div class="relative">
+                                                <select id="outboundWarehouse" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                                    <option value="">请选择仓库</option>
+                                                    <!-- 仓库选项将通过JavaScript动态填充 -->
+                                                </select>
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <i class="fa fa-chevron-down text-gray-400"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label for="outboundQuantity" class="block text-sm font-medium text-gray-700 mb-1">出库数量 <span class="text-red-500">*</span></label>
+                                            <input type="number" id="outboundQuantity" name="quantity" min="1" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                                            <p class="mt-1 text-xs text-gray-500">当前库存: <span id="currentStockDisplay">0</span></p>
+                                        </div>
+                                        <div>
+                                            <label for="outboundPurpose" class="block text-sm font-medium text-gray-700 mb-1">出库用途 <span class="text-red-500">*</span></label>
+                                            <input type="text" id="outboundPurpose" name="purpose" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                                        </div>
+                                        <div>
+                                            <label for="outboundOperator" class="block text-sm font-medium text-gray-700 mb-1">操作人 <span class="text-red-500">*</span></label>
+                                            <input type="text" id="outboundOperator" name="operator" value="管理员" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                                        </div>
+                                        <div>
+                                            <label for="outboundDate" class="block text-sm font-medium text-gray-700 mb-1">出库日期 <span class="text-red-500">*</span></label>
+                                            <input type="date" id="outboundDate" name="date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label for="outboundRemark" class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                                            <textarea id="outboundRemark" name="remark" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="mt-6 flex justify-end">
+                                        <button type="button" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary mr-3">
+                                            取消
+                                        </button>
+                                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                                            提交
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- 调拨表单 -->
+                        <div id="transferTab" class="tab-content hidden">
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-medium text-gray-800 mb-4">库存调拨</h3>
+                                <form id="transferForm">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label for="transferMaterial" class="block text-sm font-medium text-gray-700 mb-1">物料名称 <span class="text-red-500">*</span></label>
+                                            <div class="relative">
+                                                <select id="transferMaterial" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                                    <option value="">请选择物料</option>
+                                                    <!-- 物料选项将通过JavaScript动态填充 -->
+                                                </select>
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <i class="fa fa-chevron-down text-gray-400"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label for="transferQuantity" class="block text-sm font-medium text-gray-700 mb-1">调拨数量 <span class="text-red-500">*</span></label>
+                                            <input type="number" id="transferQuantity" name="quantity" min="1" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                                            <p class="mt-1 text-xs text-gray-500">当前库存: <span id="transferCurrentStock">0</span></p>
+                                        </div>
+                                        <div>
+                                            <label for="fromWarehouse" class="block text-sm font-medium text-gray-700 mb-1">调出仓库 <span class="text-red-500">*</span></label>
+                                            <div class="relative">
+                                                <select id="fromWarehouse" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                                    <option value="">请选择仓库</option>
+                                                    <!-- 仓库选项将通过JavaScript动态填充 -->
+                                                </select>
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <i class="fa fa-chevron-down text-gray-400"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label for="toWarehouse" class="block text-sm font-medium text-gray-700 mb-1">调入仓库 <span class="text-red-500">*</span></label>
+                                            <div class="relative">
+                                                <select id="toWarehouse" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                                    <option value="">请选择仓库</option>
+                                                    <!-- 仓库选项将通过JavaScript动态填充 -->
+                                                </select>
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <i class="fa fa-chevron-down text-gray-400"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label for="transferOperator" class="block text-sm font-medium text-gray-700 mb-1">操作人 <span class="text-red-500">*</span></label>
+                                            <input type="text" id="transferOperator" name="operator" value="管理员" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                                        </div>
+                                        <div>
+                                            <label for="transferDate" class="block text-sm font-medium text-gray-700 mb-1">调拨日期 <span class="text-red-500">*</span></label>
+                                            <input type="date" id="transferDate" name="date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label for="transferRemark" class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                                            <textarea id="transferRemark" name="remark" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="mt-6 flex justify-end">
+                                        <button type="button" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary mr-3">
+                                            取消
+                                        </button>
+                                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                                            提交
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- 历史记录 -->
+                        <div id="historyTab" class="tab-content hidden">
+                            <div class="bg-white rounded-lg shadow overflow-hidden">
+                                <div class="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                                    <h3 class="text-lg font-medium text-gray-800 mb-2 sm:mb-0">出入库历史记录</h3>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="relative">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <i class="fa fa-search text-gray-400"></i>
+                                            </div>
+                                            <input id="historySearchInput" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm" placeholder="搜索记录..." type="search">
+                                        </div>
+                                        <select id="historyTypeFilter" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                            <option value="">全部类型</option>
+                                            <option value="in">入库</option>
+                                            <option value="out">出库</option>
+                                            <option value="transfer">调拨</option>
+                                        </select>
+                                        <button id="exportHistoryBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md flex items-center">
+                                            <i class="fa fa-download mr-2"></i> 导出
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作时间</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作类型</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">物料名称</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">数量</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">仓库</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作人</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">备注</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200" id="historyTableBody">
+                                            <!-- 历史记录将通过JavaScript动态填充 -->
+                                            <tr>
+                                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">暂无历史记录</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                                    <!-- 分页控件 -->
+                                    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                        <div>
+                                            <p class="text-sm text-gray-700">
+                                                显示 <span class="font-medium">1</span> 到 <span class="font-medium">10</span> 条，共 <span class="font-medium">57</span> 条记录
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                                <!-- 分页按钮 -->
+                                                <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                                    <span class="sr-only">上一页</span>
+                                                    <i class="fa fa-chevron-left"></i>
+                                                </a>
+                                                <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary text-sm font-medium text-white">
+                                                    1
+                                                </a>
+                                                <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                                    2
+                                                </a>
+                                                <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                                    3
+                                                </a>
+                                                <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                                    <span class="sr-only">下一页</span>
+                                                    <i class="fa fa-chevron-right"></i>
+                                                </a>
+                                            </nav>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 仓库管理页面 -->
+                    <div id="warehouses" class="page hidden">
+                        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">仓库管理</h2>
+                                <p class="text-gray-600">管理所有仓库信息</p>
+                            </div>
+                            <div class="mt-4 sm:mt-0">
+                                <button id="addWarehouseBtn" class="bg-primary hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+                                    <i class="fa fa-plus mr-2"></i> 添加仓库
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 仓库列表 -->
+                        <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">仓库编号</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">仓库名称</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">位置</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系人</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系电话</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">物料种类</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">库存总量</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200" id="warehousesTableBody">
+                                        <!-- 仓库数据将通过JavaScript动态填充 -->
+                                        <tr>
+                                            <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">暂无仓库数据</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- 仓库详情卡片 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-medium text-gray-800">总仓</h3>
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                        正常
+                                    </span>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">位置:</span>
+                                        <span class="text-sm text-gray-800">主楼1层</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">联系人:</span>
+                                        <span class="text-sm text-gray-800">张三</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">联系电话:</span>
+                                        <span class="text-sm text-gray-800">13800138000</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">物料种类:</span>
+                                        <span class="text-sm text-gray-800">42种</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">库存总量:</span>
+                                        <span class="text-sm text-gray-800">12,450件</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-gray-200">
+                                    <button class="text-primary hover:text-blue-700 text-sm font-medium flex items-center">
+                                        <i class="fa fa-edit mr-1"></i> 编辑
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-medium text-gray-800">电子元件仓</h3>
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                        正常
+                                    </span>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">位置:</span>
+                                        <span class="text-sm text-gray-800">主楼2层</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">联系人:</span>
+                                        <span class="text-sm text-gray-800">李四</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">联系电话:</span>
+                                        <span class="text-sm text-gray-800">13900139000</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">物料种类:</span>
+                                        <span class="text-sm text-gray-800">28种</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">库存总量:</span>
+                                        <span class="text-sm text-gray-800">8,720件</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-gray-200">
+                                    <button class="text-primary hover:text-blue-700 text-sm font-medium flex items-center">
+                                        <i class="fa fa-edit mr-1"></i> 编辑
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-medium text-gray-800">实验耗材仓</h3>
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                        正常
+                                    </span>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">位置:</span>
+                                        <span class="text-sm text-gray-800">辅楼1层</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">联系人:</span>
+                                        <span class="text-sm text-gray-800">王五</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">联系电话:</span>
+                                        <span class="text-sm text-gray-800">13700137000</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">物料种类:</span>
+                                        <span class="text-sm text-gray-800">35种</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-500">库存总量:</span>
+                                        <span class="text-sm text-gray-800">15,320件</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-gray-200">
+                                    <button class="text-primary hover:text-blue-700 text-sm font-medium flex items-center">
+                                        <i class="fa fa-edit mr-1"></i> 编辑
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 报表中心页面 -->
+                    <div id="reports" class="page hidden">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">报表中心</h2>
+                            <p class="text-gray-600">查看各类库存和出入库报表</p>
+                        </div>
+                        
+                        <!-- 报表筛选器 -->
+                        <div class="bg-white p-4 rounded-lg shadow mb-6">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">报表类型</label>
+                                    <select id="reportType" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                                        <option value="inventory">库存报表</option>
+                                        <option value="inbound">入库报表</option>
+                                        <option value="outbound">出库报表</option>
+                                        <option value="category">分类统计</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">仓库</label>
+                                    <select id="reportWarehouse" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                                        <option value="">全部仓库</option>
+                                        <option value="1">总仓</option>
+                                        <option value="2">电子元件仓</option>
+                                        <option value="3">实验耗材仓</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">开始日期</label>
+                                    <input type="date" id="reportStartDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">结束日期</label>
+                                    <input type="date" id="reportEndDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
+                                </div>
+                            </div>
+                            <div class="mt-4 flex justify-end">
+                                <button id="generateReportBtn" class="bg-primary hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md flex items-center">
+                                    <i class="fa fa-refresh mr-2"></i> 生成报表
+                                </button>
+                                <button id="exportReportBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md flex items-center ml-3">
+                                    <i class="fa fa-download mr-2"></i> 导出
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 报表内容 -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <!-- 库存价值分布 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-medium text-gray-800 mb-4">库存价值分布</h3>
+                                <div class="h-80">
+                                    <canvas id="inventoryValueChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- 出入库数量趋势 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-medium text-gray-800 mb-4">出入库数量趋势</h3>
+                                <div class="h-80">
+                                    <canvas id="inOutQuantityChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <!-- 物料分类统计 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-medium text-gray-800 mb-4">物料分类统计</h3>
+                                <div class="h-80">
+                                    <canvas id="categoryStatisticsChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- 库存周转率 -->
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h3 class="text-lg font-medium text-gray-800 mb-4">库存周转率</h3>
+                                <div class="h-80">
+                                    <canvas id="inventoryTurnoverChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 库存报表表格 -->
+                        <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <div class="px-6 py-4 border-b border-gray-200">
+                                <h3 class="text-lg font-medium text-gray-800">库存明细报表</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">物料编号</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">物料名称</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">分类</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">规格</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">仓库</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">库存量</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">单价</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">库存价值</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200" id="reportTableBody">
+                                        <!-- 报表数据将通过JavaScript动态填充 -->
+                                        <tr>
+                                            <td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500">暂无报表数据</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                                <!-- 分页控件 -->
+                                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-700">
+                                            显示 <span class="font-medium">1</span> 到 <span class="font-medium">10</span> 条，共 <span class="font-medium">97</span> 条记录
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                            <!-- 分页按钮 -->
+                                            <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                                <span class="sr-only">上一页</span>
+                                                <i class="fa fa-chevron-left"></i>
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary text-sm font-medium text-white">
+                                                1
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                                2
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                                3
+                                            </a>
+                                            <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                                <span class="sr-only">下一页</span>
+                                                <i class="fa fa-chevron-right"></i>
+                                            </a>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- 添加物料模态框 -->
+    <div id="addMaterialModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-900">添加物料</h3>
+                <button id="closeAddMaterialModal" class="text-gray-400 hover:text-gray-500">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form id="addMaterialForm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="materialName" class="block text-sm font-medium text-gray-700 mb-1">物料名称 <span class="text-red-500">*</span></label>
+                            <input type="text" id="materialName" name="name" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="materialCategory" class="block text-sm font-medium text-gray-700 mb-1">分类 <span class="text-red-500">*</span></label>
+                            <select id="materialCategory" name="category" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                                <option value="">请选择分类</option>
+                                <option value="电子元件">电子元件</option>
+                                <option value="机械零件">机械零件</option>
+                                <option value="实验耗材">实验耗材</option>
+                                <option value="办公用品">办公用品</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="materialSpecification" class="block text-sm font-medium text-gray-700 mb-1">规格 <span class="text-red-500">*</span></label>
+                            <input type="text" id="materialSpecification" name="specification" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="materialUnit" class="block text-sm font-medium text-gray-700 mb-1">单位 <span class="text-red-500">*</span></label>
+                            <input type="text" id="materialUnit" name="unit" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="materialPrice" class="block text-sm font-medium text-gray-700 mb-1">单价</label>
+                            <input type="number" id="materialPrice" name="price" min="0" step="0.01" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="materialManufacturer" class="block text-sm font-medium text-gray-700 mb-1">生产厂家</label>
+                            <input type="text" id="materialManufacturer" name="manufacturer" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="materialBarcode" class="block text-sm font-medium text-gray-700 mb-1">条码</label>
+                            <input type="text" id="materialBarcode" name="barcode" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="materialMinStock" class="block text-sm font-medium text-gray-700 mb-1">最小库存量(预警线)</label>
+                            <input type="number" id="materialMinStock" name="minStock" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="materialRemark" class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                            <textarea id="materialRemark" name="remark" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end">
+                        <button type="button" id="cancelAddMaterial" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary mr-3">
+                            取消
+                        </button>
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                            保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 添加仓库模态框 -->
+    <div id="addWarehouseModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-900">添加仓库</h3>
+                <button id="closeAddWarehouseModal" class="text-gray-400 hover:text-gray-500">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form id="addWarehouseForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="warehouseName" class="block text-sm font-medium text-gray-700 mb-1">仓库名称 <span class="text-red-500">*</span></label>
+                            <input type="text" id="warehouseName" name="name" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="warehouseLocation" class="block text-sm font-medium text-gray-700 mb-1">位置 <span class="text-red-500">*</span></label>
+                            <input type="text" id="warehouseLocation" name="location" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="warehouseContactPerson" class="block text-sm font-medium text-gray-700 mb-1">联系人</label>
+                            <input type="text" id="warehouseContactPerson" name="contactPerson" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="warehouseContactPhone" class="block text-sm font-medium text-gray-700 mb-1">联系电话</label>
+                            <input type="text" id="warehouseContactPhone" name="contactPhone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="warehouseRemark" class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                            <textarea id="warehouseRemark" name="remark" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end">
+                        <button type="button" id="cancelAddWarehouse" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary mr-3">
+                            取消
+                        </button>
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                            保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 通知提示 -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg transform translate-y-10 opacity-0 transition-all duration-300 z-50">
+        <div class="flex items-center">
+            <i class="fa fa-check-circle mr-2"></i>
+            <span id="toastMessage">操作成功</span>
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script>
+        // 初始化数据
+        const initData = () => {
+            // 检查本地存储是否已有数据
+            if (!localStorage.getItem('materials')) {
+                // 初始化物料数据
+                const materials = [
+                    {
+                        id: 'M001',
+                        name: '电阻',
+                        category: '电子元件',
+                        specification: '100Ω 1/4W',
+                        unit: '个',
+                        price: 0.1,
+                        manufacturer: '国巨',
+                        barcode: '10010001',
+                        minStock: 1000,
+                        remark: '常用电阻',
+                        createdAt: new Date('2023-01-15'),
+                        updatedAt: new Date('2023-01-15')
+                    },
+                    {
+                        id: 'M002',
+                        name: '电容',
+                        category: '电子元件',
+                        specification: '10μF 16V',
+                        unit: '个',
+                        price: 0.2,
+                        manufacturer: '村田',
+                        barcode: '10020001',
+                        minStock: 500,
+                        remark: '电解电容',
+                        createdAt: new Date('2023-01-16'),
+                        updatedAt: new Date('2023-01-16')
+                    },
+                    {
+                        id: 'M003',
+                        name: '三极管',
+                        category: '电子元件',
+                        specification: 'NPN 9013',
+                        unit: '个',
+                        price: 0.3,
+                        manufacturer: '长电',
+                        barcode: '10030001',
+                        minStock: 300,
+                        remark: '通用三极管',
+                        createdAt: new Date('2023-01-17'),
+                        updatedAt: new Date('2023-01-17')
+                    },
+                    {
+                        id: 'M004',
+                        name: '实验手套',
+                        category: '实验耗材',
+                        specification: '一次性丁腈手套 M号',
+                        unit: '盒',
+                        price: 50,
+                        manufacturer: '3M',
+                        barcode: '20010001',
+                        minStock: 50,
+                        remark: '每盒100只',
+                        createdAt: new Date('2023-01-18'),
+                        updatedAt: new Date('2023-01-18')
+                    },
+                    {
+                        id: 'M005',
+                        name: '实验口罩',
+                        category: '实验耗材',
+                        specification: 'N95',
+                        unit: '盒',
+                        price: 80,
+                        manufacturer: '3M',
+                        barcode: '20020001',
+                        minStock: 30,
+                        remark: '每盒50只',
+                        createdAt: new Date('2023-01-19'),
+                        updatedAt: new Date('2023-01-19')
+                    },
+                    {
+                        id: 'M006',
+                        name: 'A4纸',
+                        category: '办公用品',
+                        specification: '210×297mm 80g',
+                        unit: '包',
+                        price: 25,
+                        manufacturer: '得力',
+                        barcode: '30010001',
+                        minStock: 20,
+                        remark: '每包500张',
+                        createdAt: new Date('2023-01-20'),
+                        updatedAt: new Date('2023-01-20')
+                    }
+                ];
+                localStorage.setItem('materials', JSON.stringify(materials));
+            }
+            
+            if (!localStorage.getItem('warehouses')) {
+                // 初始化仓库数据
+                const warehouses = [
+                    {
+                        id: 'W001',
+                        name: '总仓',
+                        location: '主楼1层',
+                        contactPerson: '张三',
+                        contactPhone: '13800138000',
+                        remark: '主仓库'
+                    },
+                    {
+                        id: 'W002',
+                        name: '电子元件仓',
+                        location: '主楼2层',
+                        contactPerson: '李四',
+                        contactPhone: '13900139000',
+                        remark: '存放电子类物料'
+                    },
+                    {
+                        id: 'W003',
+                        name: '实验耗材仓',
+                        location: '辅楼1层',
+                        contactPerson: '王五',
+                        contactPhone: '13700137000',
+                        remark: '存放实验耗材'
+                    }
+                ];
+                localStorage.setItem('warehouses', JSON.stringify(warehouses));
+            }
+            
+            if (!localStorage.getItem('inventory')) {
+                // 初始化库存数据
+                const inventory = [
+                    {
+                        materialId: 'M001',
+                        quantity: 5000,
+                        warehouseId: 'W001',
+                        updatedAt: new Date('2023-01-20')
+                    },
+                    {
+                        materialId: 'M001',
+                        quantity: 3000,
+                        warehouseId: 'W002',
+                        updatedAt: new Date('2023-01-20')
+                    },
+                    {
+                        materialId: 'M002',
+                        quantity: 2000,
+                        warehouseId: 'W001',
+                        updatedAt: new Date('2023-01-21')
+                    },
+                    {
+                        materialId: 'M002',
+                        quantity: 1500,
+                        warehouseId: 'W002',
+                        updatedAt: new Date('2023-01-21')
+                    },
+                    {
+                        materialId: 'M003',
+                        quantity: 1000,
+                        warehouseId: 'W001',
+                        updatedAt: new Date('2023-01-22')
+                    },
+                    {
+                        materialId: 'M003',
+                        quantity: 800,
+                        warehouseId: 'W002',
+                        updatedAt: new Date('2023-01-22')
+                    },
+                    {
+                        materialId: 'M004',
+                        quantity: 100,
+                        warehouseId: 'W001',
+                        updatedAt: new Date('2023-01-23')
+                    },
+                    {
+                        materialId: 'M004',
+                        quantity: 200,
+                        warehouseId: 'W003',
+                        updatedAt: new Date('2023-01-23')
+                    },
+                    {
+                        materialId: 'M005',
+                        quantity: 50,
+                        warehouseId: 'W001',
+                        updatedAt: new Date('2023-01-24')
+                    },
+                    {
+                        materialId: 'M005',
+                        quantity: 100,
+                        warehouseId: 'W003',
+                        updatedAt: new Date('2023-01-24')
+                    },
+                    {
+                        materialId: 'M006',
+                        quantity: 30,
+                        warehouseId: 'W001',
+                        updatedAt: new Date('2023-01-25')
+                    }
+                ];
+                localStorage.setItem('inventory', JSON.stringify(inventory));
+            }
+            
+            if (!localStorage.getItem('transactions')) {
+                // 初始化交易记录
+                const transactions = [
+                    {
+                        id: 'T001',
+                        materialId: 'M001',
+                        type: 'in',
+                        quantity: 5000,
+                        fromWarehouseId: null,
+                        toWarehouseId: 'W001',
+                        operator: '张三',
+                        purpose: '采购入库',
+                        createdAt: new Date('2023-01-15'),
+                        relatedOrderId: 'PO20230115001'
+                    },
+                    {
+                        id: 'T002',
+                        materialId: 'M001',
+                        type: 'transfer',
+                        quantity: 3000,
+                        fromWarehouseId: 'W001',
+                        toWarehouseId: 'W002',
+                        operator: '李四',
+                        purpose: '库存调拨',
+                        createdAt: new Date('2023-01-16'),
+                        relatedOrderId: null
+                    },
+                    {
+                        id: 'T003',
+                        materialId: 'M002',
+                        type: 'in',
+                        quantity: 3500,
+                        fromWarehouseId: null,
+                        toWarehouseId: 'W001',
+                        operator: '张三',
+                        purpose: '采购入库',
+                        createdAt: new Date('2023-01-17'),
+                        relatedOrderId: 'PO20230117001'
+                    },
+                    {
+                        id: 'T004',
+                        materialId: 'M002',
+                        type: 'transfer',
+                        quantity: 1500,
+                        fromWarehouseId: 'W001',
+                        toWarehouseId: 'W002',
+                        operator: '李四',
+                        purpose: '库存调拨',
+                        createdAt: new Date('2023-01-18'),
+                        relatedOrderId: null
+                    },
+                    {
+                        id: 'T005',
+                        materialId: 'M003',
+                        type: 'in',
+                        quantity: 1800,
+                        fromWarehouseId: null,
+                        toWarehouseId: 'W001',
+                        operator: '张三',
+                        purpose: '采购入库',
+                        createdAt: new Date('2023-01-19'),
+                        relatedOrderId: 'PO20230119001'
+                    },
+                    {
+                        id: 'T006',
+                        materialId: 'M003',
+                        type: 'transfer',
+                        quantity: 800,
+                        fromWarehouseId: 'W001',
+                        toWarehouseId: 'W002',
+                        operator: '李四',
+                        purpose: '库存调拨',
+                        createdAt: new Date('2023-01-20'),
+                        relatedOrderId: null
+                    },
+                    {
+                        id: 'T007',
+                        materialId: 'M004',
+                        type: 'in',
+                        quantity: 300,
+                        fromWarehouseId: null,
+                        toWarehouseId: 'W001',
+                        operator: '张三',
+                        purpose: '采购入库',
+                        createdAt: new Date('2023-01-21'),
+                        relatedOrderId: 'PO20230121001'
+                    },
+                    {
+                        id: 'T008',
+                        materialId: 'M004',
+                        type: 'transfer',
+                        quantity: 200,
+                        fromWarehouseId: 'W001',
+                        toWarehouseId: 'W003',
+                        operator: '王五',
+                        purpose: '库存调拨',
+                        createdAt: new Date('2023-01-22'),
+                        relatedOrderId: null
+                    },
+                    {
+                        id: 'T009',
+                        materialId: 'M005',
+                        type: 'in',
+                        quantity: 150,
+                        fromWarehouseId: null,
+                        toWarehouseId: 'W001',
+                        operator: '张三',
+                        purpose: '采购入库',
+                        createdAt: new Date('2023-01-23'),
+                        relatedOrderId: 'PO20230123001'
+                    },
+                    {
+                        id: 'T010',
+                        materialId: 'M005',
+                        type: 'transfer',
+                        quantity: 100,
+                        fromWarehouseId: 'W001',
+                        toWarehouseId: 'W003',
+                        operator: '王五',
+                        purpose: '库存调拨',
+                        createdAt: new Date('2023-01-24'),
+                        relatedOrderId: null
+                    },
+                    {
+                        id: 'T011',
+                        materialId: 'M006',
+                        type: 'in',
+                        quantity: 30,
+                        fromWarehouseId: null,
+                        toWarehouseId: 'W001',
+                        operator: '张三',
+                        purpose: '采购入库',
+                        createdAt: new Date('2023-01-25'),
+                        relatedOrderId: 'PO20230125001'
+                    },
+                    {
+                        id: 'T012',
+                        materialId: 'M001',
+                        type: 'out',
+                        quantity: 500,
+                        fromWarehouseId: 'W002',
+                        toWarehouseId: null,
+                        operator: '李四',
+                        purpose: '实验使用',
+                        createdAt: new Date('2023-01-26'),
+                        relatedOrderId: 'WO20230126001'
+                    },
+                    {
+                        id: 'T013',
+                        materialId: 'M002',
+                        type: 'out',
+                        quantity: 300,
+                        fromWarehouseId: 'W002',
+                        toWarehouseId: null,
+                        operator: '李四',
+                        purpose: '实验使用',
+                        createdAt: new Date('2023-01-26'),
+                        relatedOrderId: 'WO20230126001'
+                    },
+                    {
+                        id: 'T014',
+                        materialId: 'M004',
+                        type: 'out',
+                        quantity: 20,
+                        fromWarehouseId: 'W003',
+                        toWarehouseId: null,
+                        operator: '王五',
+                        purpose: '实验使用',
+                        createdAt: new Date('2023-01-27'),
+                        relatedOrderId: 'WO20230127001'
+                    },
+                    {
+                        id: 'T015',
+                        materialId: 'M005',
+                        type: 'out',
+                        quantity: 15,
+                        fromWarehouseId: 'W003',
+                        toWarehouseId: null,
+                        operator: '王五',
+                        purpose: '实验使用',
+                        createdAt: new Date('2023-01-27'),
+                        relatedOrderId: 'WO20230127001'
+                    }
+                ];
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+            }
+        };
+        
+        // 获取数据
+        const getMaterials = () => JSON.parse(localStorage.getItem('materials') || '[]');
+        const getWarehouses = () => JSON.parse(localStorage.getItem('warehouses') || '[]');
+        const getInventory = () => JSON.parse(localStorage.getItem('inventory') || '[]');
+        const getTransactions = () => JSON.parse(localStorage.getItem('transactions') || '[]');
+        
+        // 保存数据
+        const saveMaterials = (materials) => localStorage.setItem('materials', JSON.stringify(materials));
+        const saveWarehouses = (warehouses) => localStorage.setItem('warehouses', JSON.stringify(warehouses));
+        const saveInventory = (inventory) => localStorage.setItem('inventory', JSON.stringify(inventory));
+        const saveTransactions = (transactions) => localStorage.setItem('transactions', JSON.stringify(transactions));
+        
+        // 生成唯一ID
+        const generateId = (prefix) => {
+            const timestamp = Date.now().toString().slice(-6);
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            return `${prefix}${timestamp}${random}`;
+        };
+        
+        // 格式化日期
+        const formatDate = (date) => {
+            if (!date) return '';
+            const d = new Date(date);
+            return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+        };
+        
+        // 显示通知
+        const showToast = (message, type = 'success') => {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            
+            // 设置颜色
+            if (type === 'success') {
+                toast.className = toast.className.replace(/bg-\w+-500/, 'bg-green-500');
+            } else if (type === 'error') {
+                toast.className = toast.className.replace(/bg-\w+-500/, 'bg-red-500');
+            } else if (type === 'warning') {
+                toast.className = toast.className.replace(/bg-\w+-500/, 'bg-yellow-500');
+            }
+            
+            // 显示
+            toast.classList.remove('translate-y-10', 'opacity-0');
+            
+            // 3秒后隐藏
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+            }, 3000);
+        };
+        
+        // 页面切换
+        const switchPage = (pageId) => {
+            // 隐藏所有页面
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            // 显示选中页面
+            document.getElementById(pageId).classList.remove('hidden');
+            
+            // 更新导航栏选中状态
+            document.querySelectorAll('nav a').forEach(link => {
+                link.classList.remove('sidebar-active');
+                if (link.getAttribute('data-page') === pageId) {
+                    link.classList.add('sidebar-active');
+                }
+            });
+            
+            // 移动端侧边栏关闭
+            document.getElementById('mobileSidebar').classList.add('hidden');
+            document.getElementById('mobileSidebarContent').classList.add('-translate-x-full');
+            
+            // 如果是仪表盘页面，初始化图表
+            if (pageId === 'dashboard') {
+                initDashboardCharts();
+            }
+            
+            // 如果是报表页面，初始化报表图表
+            if (pageId === 'reports') {
+                initReportCharts();
+            }
+        };
+        
+        // 初始化仪表盘图表
+        const initDashboardCharts = () => {
+            // 出入库趋势图
+            const inOutTrendCtx = document.getElementById('inOutTrendChart').getContext('2d');
+            const inOutTrendChart = new Chart(inOutTrendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [
+                        {
+                            label: '入库数量',
+                            data: [1200, 1900, 1500, 2500, 2200, 3000],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '出库数量',
+                            data: [800, 1500, 1200, 2000, 1800, 2500],
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // 库存分类分布图
+            const inventoryCategoryCtx = document.getElementById('inventoryCategoryChart').getContext('2d');
+            const inventoryCategoryChart = new Chart(inventoryCategoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['电子元件', '实验耗材', '办公用品', '机械零件'],
+                    datasets: [{
+                        data: [45, 30, 15, 10],
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#8b5cf6'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        }
+                    }
+                }
+            });
+        };
+        
+        // 初始化报表图表
+        const initReportCharts = () => {
+            // 库存价值分布
+            const inventoryValueCtx = document.getElementById('inventoryValueChart').getContext('2d');
+            const inventoryValueChart = new Chart(inventoryValueCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['电子元件', '实验耗材', '办公用品', '机械零件'],
+                    datasets: [{
+                        data: [50000, 30000, 15000, 25000],
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#8b5cf6'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ¥${value.toLocaleString()} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 出入库数量趋势
+            const inOutQuantityCtx = document.getElementById('inOutQuantityChart').getContext('2d');
+            const inOutQuantityChart = new Chart(inOutQuantityCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [
+                        {
+                            label: '入库数量',
+                            data: [1200, 1900, 1500, 2500, 2200, 3000],
+                            backgroundColor: '#3b82f6'
+                        },
+                        {
+                            label: '出库数量',
+                            data: [800, 1500, 1200, 2000, 1800, 2500],
+                            backgroundColor: '#ef4444'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // 物料分类统计
+            const categoryStatisticsCtx = document.getElementById('categoryStatisticsChart').getContext('2d');
+            const categoryStatisticsChart = new Chart(categoryStatisticsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['电子元件', '实验耗材', '办公用品', '机械零件'],
+                    datasets: [{
+                        label: '物料种类数量',
+                        data: [42, 35, 28, 15],
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#8b5cf6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // 库存周转率
+            const inventoryTurnoverCtx = document.getElementById('inventoryTurnoverChart').getContext('2d');
+            const inventoryTurnoverChart = new Chart(inventoryTurnoverCtx, {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [{
+                        label: '库存周转率(%)',
+                        data: [3.2, 3.5, 3.8, 4.2, 4.0, 4.5],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        };
+        
+        // 加载物料列表
+        const loadMaterialsTable = () => {
+            const materials = getMaterials();
+            const tableBody = document.getElementById('materialsTableBody');
+            
+            if (materials.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="10" class="px-6 py-4 text-center text-sm text-gray-500">暂无物料数据</td></tr>';
+                return;
+            }
+            
+            tableBody.innerHTML = '';
+            
+            materials.forEach(material => {
+                // 获取该物料的总库存
+                const inventory = getInventory();
+                const totalQuantity = inventory
+                    .filter(item => item.materialId === material.id)
+                    .reduce((sum, item) => sum + item.quantity, 0);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" class="rounded text-primary focus:ring-primary">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${material.id}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${material.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${material.category}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${material.specification}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${material.unit}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">¥${material.price.toFixed(2)}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${totalQuantity}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${material.minStock}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <a href="#" class="text-primary hover:text-blue-700 mr-3">编辑</a>
+                        <a href="#" class="text-red-600 hover:text-red-800">删除</a>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // 更新物料总数
+            document.getElementById('totalMaterials').textContent = materials.length;
+        };
+        
+        // 加载库存列表
+        const loadInventoryTable = () => {
+            const inventory = getInventory();
+            const materials = getMaterials();
+            const warehouses = getWarehouses();
+            const tableBody = document.getElementById('inventoryTableBody');
+            
+            if (inventory.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500">暂无库存数据</td></tr>';
+                return;
+            }
+            
+            tableBody.innerHTML = '';
+            
+            inventory.forEach(item => {
+                const material = materials.find(m => m.id === item.materialId);
+                const warehouse = warehouses.find(w => w.id === item.warehouseId);
+                
+                if (!material || !warehouse) return;
+                
+                // 计算库存状态
+                let status = '';
+                let statusClass = '';
+                
+                if (item.quantity === 0) {
+                    status = '缺货';
+                    statusClass = 'bg-red-100 text-red-800';
+                } else if (item.quantity < material.minStock) {
+                    status = '预警';
+                    statusClass = 'bg-yellow-100 text-yellow-800';
+                } else {
+                    status = '正常';
+                    statusClass = 'bg-green-100 text-green-800';
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${material.id}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${material.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${material.specification}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${warehouse.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${item.quantity} ${material.unit}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${material.minStock} ${material.unit}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                            ${status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${formatDate(item.updatedAt)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <a href="#" class="text-primary hover:text-blue-700 mr-3">调整</a>
+                        <a href="#" class="text-primary hover:text-blue-700">详情</a>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // 更新库存统计
+            const totalInventory = inventory.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('totalInventory').textContent = totalInventory.toLocaleString();
+            
+            // 计算库存状态统计
+            const normalCount = inventory.filter(item => {
+                const material = materials.find(m => m.id === item.materialId);
+                return material && item.quantity >= material.minStock;
+            }).length;
+            
+            const warningCount = inventory.filter(item => {
+                const material = materials.find(m => m.id === item.materialId);
+                return material && item.quantity > 0 && item.quantity < material.minStock;
+            }).length;
+            
+            const outOfStockCount = inventory.filter(item => item.quantity === 0).length;
+            
+            document.getElementById('normalInventoryCount').textContent = normalCount;
+            document.getElementById('warningInventoryCount').textContent = warningCount;
+            document.getElementById('outOfStockCount').textContent = outOfStockCount;
+            
+            // 计算库存总值
+            const totalValue = inventory.reduce((sum, item) => {
+                const material = materials.find(m => m.id === item.materialId);
+                return sum + (material ? item.quantity * material.price : 0);
+            }, 0);
+            
+            document.getElementById('totalInventoryValue').textContent = `¥${totalValue.toLocaleString()}`;
+        };
+        
+        // 加载库存预警表格
+        const loadWarningTable = () => {
+            const inventory = getInventory();
+            const materials = getMaterials();
+            const tableBody = document.getElementById('warningTableBody');
+            
+            // 筛选出库存不足的物料
+            const warningItems = inventory.filter(item => {
+                const material = materials.find(m => m.id === item.materialId);
+                return material && item.quantity < material.minStock;
+            });
+            
+            if (warningItems.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">暂无预警数据</td></tr>';
+                return;
+            }
+            
+            tableBody.innerHTML = '';
+            
+            warningItems.forEach(item => {
+                const material = materials.find(m => m.id === item.materialId);
+                if (!material) return;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${material.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${material.specification}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${item.quantity} ${material.unit}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${material.minStock} ${material.unit}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            库存不足
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <a href="#" class="text-primary hover:text-blue-700">采购</a>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        };
+        
+        // 加载最近操作记录
+        const loadRecentTransactions = () => {
+            const transactions = getTransactions();
+            const materials = getMaterials();
+            const warehouses = getWarehouses();
+            const tableBody = document.getElementById('recentTransactionsTableBody');
+            
+            // 按时间倒序排序，取最近10条
+            const recentTransactions = [...transactions]
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, 10);
+            
+            if (recentTransactions.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">暂无操作记录</td></tr>';
+                return;
+            }
+            
+            tableBody.innerHTML = '';
+            
+            recentTransactions.forEach(transaction => {
+                const material = materials.find(m => m.id === transaction.materialId);
+                if (!material) return;
+                
+                // 确定操作类型显示文本和颜色
+                let typeText = '';
+                let typeClass = '';
+                
+                switch (transaction.type) {
+                    case 'in':
+                        typeText = '入库';
+                        typeClass = 'bg-green-100 text-green-800';
+                        break;
+                    case 'out':
+                        typeText = '出库';
+                        typeClass = 'bg-red-100 text-red-800';
+                        break;
+                    case 'transfer':
+                        typeText = '调拨';
+                        typeClass = 'bg-blue-100 text-blue-800';
+                        break;
+                }
+                
+                // 确定仓库显示
+                let warehouseText = '';
+                if (transaction.type === 'in') {
+                    const warehouse = warehouses.find(w => w.id === transaction.toWarehouseId);
+                    warehouseText = warehouse ? warehouse.name : '';
+                } else if (transaction.type === 'out') {
+                    const warehouse = warehouses.find(w => w.id === transaction.fromWarehouseId);
+                    warehouseText = warehouse ? warehouse.name : '';
+                } else if (transaction.type === 'transfer') {
+                    const fromWarehouse = warehouses.find(w => w.id === transaction.fromWarehouseId);
+                    const toWarehouse = warehouses.find(w => w.id === transaction.toWarehouseId);
+                    warehouseText = fromWarehouse && toWarehouse ? `${fromWarehouse.name} → ${toWarehouse.name}` : '';
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${formatDate(transaction.createdAt)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${typeClass}">
+                            ${typeText}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${material.name}</div>
+                        <div class="text-sm text-gray-500">${material.specification}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${transaction.quantity} ${material.unit}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${transaction.operator}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${transaction.purpose}
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // 更新本月出入库统计
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            
+            const monthlyInbound = transactions.filter(t => {
+                const date = new Date(t.createdAt);
+                return t.type === 'in' && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+            }).reduce((sum, t) => sum + t.quantity, 0);
+            
+            const monthlyOutbound = transactions.filter(t => {
+                const date = new Date(t.createdAt);
+                return t.type === 'out' && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+            }).reduce((sum, t) => sum + t.quantity, 0);
+            
+            document.getElementById('monthlyInbound').textContent = monthlyInbound.toLocaleString();
+            document.getElementById('monthlyOutbound').textContent = monthlyOutbound.toLocaleString();
+        };
+        
+        // 加载仓库列表
+        const loadWarehousesTable = () => {
+            const warehouses = getWarehouses();
+            const inventory = getInventory();
+            const materials = getMaterials();
+            const tableBody = document.getElementById('warehousesTableBody');
+            
+            if (warehouses.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">暂无仓库数据</td></tr>';
+                return;
+            }
+            
+            tableBody.innerHTML = '';
+            
+            warehouses.forEach(warehouse => {
+                // 计算该仓库的物料种类数
+                const warehouseInventory = inventory.filter(item => item.warehouseId === warehouse.id);
+                const materialIds = [...new Set(warehouseInventory.map(item => item.materialId))];
+                const materialCount = materialIds.length;
+                
+                // 计算该仓库的库存总量
+                const totalQuantity = warehouseInventory.reduce((sum, item) => sum + item.quantity, 0);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${warehouse.id}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${warehouse.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${warehouse.location}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${warehouse.contactPerson}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${warehouse.contactPhone}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${materialCount}种</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${totalQuantity.toLocaleString()}件</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <a href="#" class="text-primary hover:text-blue-700 mr-3">编辑</a>
+                        <a href="#" class="text-red-600 hover:text-red-800">删除</a>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        };
+        
+        // 加载出入库历史记录
+        const loadTransactionHistory = () => {
+            const transactions = getTransactions();
+            const materials = getMaterials();
+            const warehouses = getWarehouses();
+            const tableBody = document.getElementById('historyTableBody');
+            
+            if (transactions.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">暂无历史记录</td></tr>';
+                return;
+            }
+            
+            // 按时间倒序排序
+            const sortedTransactions = [...transactions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            tableBody.innerHTML = '';
+            
+            sortedTransactions.forEach(transaction => {
+                const material = materials.find(m => m.id === transaction.materialId);
+                if (!material) return;
+                
+                // 确定操作类型显示文本和颜色
+                let typeText = '';
+                let typeClass = '';
+                
+                switch (transaction.type) {
+                    case 'in':
+                        typeText = '入库';
+                        typeClass = 'bg-green-100 text-green-800';
+                        break;
+                    case 'out':
+                        typeText = '出库';
+                        typeClass = 'bg-red-100 text-red-800';
+                        break;
+                    case 'transfer':
+                        typeText = '调拨';
+                        typeClass = 'bg-blue-100 text-blue-800';
+                        break;
+                }
+                
+                // 确定仓库显示
+                let warehouseText = '';
+                if (transaction.type === 'in') {
+                    const warehouse = warehouses.find(w => w.id === transaction.toWarehouseId);
+                    warehouseText = warehouse ? warehouse.name : '';
+                } else if (transaction.type === 'out') {
+                    const warehouse = warehouses.find(w => w.id === transaction.fromWarehouseId);
+                    warehouseText = warehouse ? warehouse.name : '';
+                } else if (transaction.type === 'transfer') {
+                    const fromWarehouse = warehouses.find(w => w.id === transaction.fromWarehouseId);
+                    const toWarehouse = warehouses.find(w => w.id === transaction.toWarehouseId);
+                    warehouseText = fromWarehouse && toWarehouse ? `${fromWarehouse.name} → ${toWarehouse.name}` : '';
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${formatDate(transaction.createdAt)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${typeClass}">
+                            ${typeText}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${material.name}</div>
+                        <div class="text-sm text-gray-500">${material.specification}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${transaction.quantity} ${material.unit}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${warehouseText}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${transaction.operator}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${transaction.purpose}
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        };
+        
+        // 加载物料选择器
+        const loadMaterialSelectors = () => {
+            const materials = getMaterials();
+            
+            // 入库表单物料选择器
+            const inboundMaterialSelect = document.getElementById('inboundMaterial');
+            inboundMaterialSelect.innerHTML = '<option value="">请选择物料</option>';
+            materials.forEach(material => {
+                const option = document.createElement('option');
+                option.value = material.id;
+                option.textContent = `${material.name} - ${material.specification}`;
+                inboundMaterialSelect.appendChild(option);
+            });
+            
+            // 出库表单物料选择器
+            const outboundMaterialSelect = document.getElementById('outboundMaterial');
+            outboundMaterialSelect.innerHTML = '<option value="">请选择物料</option>';
+            materials.forEach(material => {
+                const option = document.createElement('option');
+                option.value = material.id;
+                option.textContent = `${material.name} - ${material.specification}`;
+                outboundMaterialSelect.appendChild(option);
+            });
+            
+            // 调拨表单物料选择器
+            const transferMaterialSelect = document.getElementById('transferMaterial');
+            transferMaterialSelect.innerHTML = '<option value="">请选择物料</option>';
+            materials.forEach(material => {
+                const option = document.createElement('option');
+                option.value = material.id;
+                option.textContent = `${material.name} - ${material.specification}`;
+                transferMaterialSelect.appendChild(option);
+            });
+        };
+        
+        // 加载仓库选择器
+        const loadWarehouseSelectors = () => {
+            const warehouses = getWarehouses();
+            
+            // 入库表单仓库选择器
+            const inboundWarehouseSelect = document.getElementById('inboundWarehouse');
+            inboundWarehouseSelect.innerHTML = '<option value="">请选择仓库</option>';
+            warehouses.forEach(warehouse => {
+                const option = document.createElement('option');
+                option.value = warehouse.id;
+                option.textContent = warehouse.name;
+                inboundWarehouseSelect.appendChild(option);
+            });
+            
+            // 出库表单仓库选择器
+            const outboundWarehouseSelect = document.getElementById('outboundWarehouse');
+            outboundWarehouseSelect.innerHTML = '<option value="">请选择仓库</option>';
+            warehouses.forEach(warehouse => {
+                const option = document.createElement('option');
+                option.value = warehouse.id;
+                option.textContent = warehouse.name;
+                outboundWarehouseSelect.appendChild(option);
+            });
+            
+            // 调拨表单仓库选择器
+            const fromWarehouseSelect = document.getElementById('fromWarehouse');
+            fromWarehouseSelect.innerHTML = '<option value="">请选择仓库</option>';
+            warehouses.forEach(warehouse => {
+                const option = document.createElement('option');
+                option.value = warehouse.id;
+                option.textContent = warehouse.name;
+                fromWarehouseSelect.appendChild(option);
+            });
+            
+            const toWarehouseSelect = document.getElementById('toWarehouse');
+            toWarehouseSelect.innerHTML = '<option value="">请选择仓库</option>';
+            warehouses.forEach(warehouse => {
+                const option = document.createElement('option');
+                option.value = warehouse.id;
+                option.textContent = warehouse.name;
+                toWarehouseSelect.appendChild(option);
+            });
+            
+            // 报表仓库选择器
+            const reportWarehouseSelect = document.getElementById('reportWarehouse');
+            reportWarehouseSelect.innerHTML = '<option value="">全部仓库</option>';
+            warehouses.forEach(warehouse => {
+                const option = document.createElement('option');
+                option.value = warehouse.id;
+                option.textContent = warehouse.name;
+                reportWarehouseSelect.appendChild(option);
+            });
+        };
+        
+        // 设置日期输入框的默认值为今天
+        const setDefaultDates = () => {
+            const today = new Date().toISOString().split('T')[0];
+            
+            // 入库表单
+            const inboundDate = document.getElementById('inboundDate');
+            if (inboundDate) inboundDate.value = today;
+            
+            // 出库表单
+            const outboundDate = document.getElementById('outboundDate');
+            if (outboundDate) outboundDate.value = today;
+            
+            // 调拨表单
+            const transferDate = document.getElementById('transferDate');
+            if (transferDate) transferDate.value = today;
+            
+            // 报表日期
+            const reportEndDate = document.getElementById('reportEndDate');
+            if (reportEndDate) reportEndDate.value = today;
+            
+            // 设置报表开始日期为30天前
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+            
+            const reportStartDate = document.getElementById('reportStartDate');
+            if (reportStartDate) reportStartDate.value = thirtyDaysAgoStr;
+        };
+        
+        // 添加物料
+        const addMaterial = (materialData) => {
+            const materials = getMaterials();
+            
+            // 生成物料ID
+            const lastId = materials.length > 0 
+                ? materials[materials.length - 1].id 
+                : 'M000';
+            
+            const idNum = parseInt(lastId.slice(1)) + 1;
+            const newId = `M${idNum.toString().padStart(3, '0')}`;
+            
+            const newMaterial = {
+                id: newId,
+                ...materialData,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            
+            materials.push(newMaterial);
+            saveMaterials(materials);
+            
+            // 刷新物料列表
+            loadMaterialsTable();
+            
+            // 关闭模态框
+            document.getElementById('addMaterialModal').classList.add('hidden');
+            
+            // 显示成功通知
+            showToast('物料添加成功');
+        };
+        
+        // 添加仓库
+        const addWarehouse = (warehouseData) => {
+            const warehouses = getWarehouses();
+            
+            // 生成仓库ID
+            const lastId = warehouses.length > 0 
+                ? warehouses[warehouses.length - 1].id 
+                : 'W000';
+            
+            const idNum = parseInt(lastId.slice(1)) + 1;
+            const newId = `W${idNum.toString().padStart(3, '0')}`;
+            
+            const newWarehouse = {
+                id: newId,
+                ...warehouseData
+            };
+            
+            warehouses.push(newWarehouse);
+            saveWarehouses(warehouses);
+            
+            // 刷新仓库列表
+            loadWarehousesTable();
+            
+            // 重新加载仓库选择器
+            loadWarehouseSelectors();
+            
+            // 关闭模态框
+            document.getElementById('addWarehouseModal').classList.add('hidden');
+            
+            // 显示成功通知
+            showToast('仓库添加成功');
+        };
+        
+        // 处理入库操作
+        const handleInbound = (data) => {
+            const { materialId, warehouseId, quantity, batch, operator, date, remark } = data;
+            
+            // 创建入库记录
+            const transactions = getTransactions();
+            const newTransaction = {
+                id: generateId('T'),
+                materialId,
+                type: 'in',
+                quantity: parseInt(quantity),
+                fromWarehouseId: null,
+                toWarehouseId: warehouseId,
+                operator,
+                purpose: remark || '采购入库',
+                createdAt: new Date(date),
+                relatedOrderId: batch || null
+            };
+            
+            transactions.push(newTransaction);
+            saveTransactions(transactions);
+            
+            // 更新库存
+            const inventory = getInventory();
+            const existingInventory = inventory.find(
+                item => item.materialId === materialId && item.warehouseId === warehouseId
+            );
+            
+            if (existingInventory) {
+                existingInventory.quantity += parseInt(quantity);
+                existingInventory.updatedAt = new Date();
+            } else {
+                inventory.push({
+                    materialId,
+                    quantity: parseInt(quantity),
+                    warehouseId,
+                    updatedAt: new Date()
+                });
+            }
+            
+            saveInventory(inventory);
+            
+            // 刷新相关数据
+            loadInventoryTable();
+            loadRecentTransactions();
+            loadTransactionHistory();
+            
+            // 显示成功通知
+            showToast('入库操作成功');
+            
+            // 重置表单
+            document.getElementById('inboundForm').reset();
+            setDefaultDates();
+        };
+        
+        // 处理出库操作
+        const handleOutbound = (data) => {
+            const { materialId, warehouseId, quantity, purpose, operator, date, remark } = data;
+            
+            // 检查库存是否足够
+            const inventory = getInventory();
+            const existingInventory = inventory.find(
+                item => item.materialId === materialId && item.warehouseId === warehouseId
+            );
+            
+            if (!existingInventory || existingInventory.quantity < parseInt(quantity)) {
+                showToast('库存不足，无法完成出库操作', 'error');
+                return;
+            }
+            
+            // 创建出库记录
+            const transactions = getTransactions();
+            const newTransaction = {
+                id: generateId('T'),
+                materialId,
+                type: 'out',
+                quantity: parseInt(quantity),
+                fromWarehouseId: warehouseId,
+                toWarehouseId: null,
+                operator,
+                purpose: purpose || remark || '实验使用',
+                createdAt: new Date(date),
+                relatedOrderId: null
+            };
+            
+            transactions.push(newTransaction);
+            saveTransactions(transactions);
+            
+            // 更新库存
+            existingInventory.quantity -= parseInt(quantity);
+            existingInventory.updatedAt = new Date();
+            saveInventory(inventory);
+            
+            // 刷新相关数据
+            loadInventoryTable();
+            loadRecentTransactions();
+            loadTransactionHistory();
+            loadWarningTable();
+            
+            // 显示成功通知
+            showToast('出库操作成功');
+            
+            // 重置表单
+            document.getElementById('outboundForm').reset();
+            setDefaultDates();
+        };
+        
+        // 处理调拨操作
+        const handleTransfer = (data) => {
+            const { materialId, fromWarehouseId, toWarehouseId, quantity, operator, date, remark } = data;
+            
+            // 检查库存是否足够
+            const inventory = getInventory();
+            const fromInventory = inventory.find(
+                item => item.materialId === materialId && item.warehouseId === fromWarehouseId
+            );
+            
+            if (!fromInventory || fromInventory.quantity < parseInt(quantity)) {
+                showToast('库存不足，无法完成调拨操作', 'error');
+                return;
+            }
+            
+            // 创建调拨记录
+            const transactions = getTransactions();
+            const newTransaction = {
+                id: generateId('T'),
+                materialId,
+                type: 'transfer',
+                quantity: parseInt(quantity),
+                fromWarehouseId,
+                toWarehouseId,
+                operator,
+                purpose: remark || '库存调拨',
+                createdAt: new Date(date),
+                relatedOrderId: null
+            };
+            
+            transactions.push(newTransaction);
+            saveTransactions(transactions);
+            
+            // 更新库存
+            // 减少源仓库库存
+            fromInventory.quantity -= parseInt(quantity);
+            fromInventory.updatedAt = new Date();
+            
+            // 增加目标仓库库存
+            const toInventory = inventory.find(
+                item => item.materialId === materialId && item.warehouseId === toWarehouseId
+            );
+            
+            if (toInventory) {
+                toInventory.quantity += parseInt(quantity);
+                toInventory.updatedAt = new Date();
+            } else {
+                inventory.push({
+                    materialId,
+                    quantity: parseInt(quantity),
+                    warehouseId: toWarehouseId,
+                    updatedAt: new Date()
+                });
+            }
+            
+            saveInventory(inventory);
+            
+            // 刷新相关数据
+            loadInventoryTable();
+            loadRecentTransactions();
+            loadTransactionHistory();
+            loadWarningTable();
+            
+            // 显示成功通知
+            showToast('调拨操作成功');
+            
+            // 重置表单
+            document.getElementById('transferForm').reset();
+            setDefaultDates();
+        };
+        
+        // 模拟条码扫描
+        const simulateScan = () => {
+            const materials = getMaterials();
+            // 随机选择一个物料
+            const randomIndex = Math.floor(Math.random() * materials.length);
+            const material = materials[randomIndex];
+            
+            // 获取该物料的库存
+            const inventory = getInventory();
+            const totalQuantity = inventory
+                .filter(item => item.materialId === material.id)
+                .reduce((sum, item) => sum + item.quantity, 0);
+            
+            // 显示扫描结果
+            document.getElementById('scanMaterialId').textContent = material.id;
+            document.getElementById('scanMaterialName').textContent = material.name;
+            document.getElementById('scanSpecification').textContent = material.specification;
+            document.getElementById('scanCurrentStock').textContent = `${totalQuantity} ${material.unit}`;
+            
+            // 启用确认按钮
+            document.getElementById('confirmScanBtn').disabled = false;
+            
+            // 存储当前扫描的物料ID
+            document.getElementById('confirmScanBtn').setAttribute('data-material-id', material.id);
+            
+            // 显示成功通知
+            showToast('条码扫描成功');
+        };
+        
+        // 确认扫描入库
+        const confirmScanInbound = () => {
+            const materialId = document.getElementById('confirmScanBtn').getAttribute('data-material-id');
+            const quantity = parseInt(document.getElementById('scanQuantity').value);
+            
+            if (!materialId || isNaN(quantity) || quantity <= 0) {
+                showToast('请先扫描条码并输入有效的数量', 'error');
+                return;
+            }
+            
+            // 默认入库到总仓
+            const warehouseId = 'W001';
+            const operator = '管理员';
+            const date = new Date().toISOString().split('T')[0];
+            const remark = '条码扫描入库';
+            
+            // 执行入库操作
+            handleInbound({
+                materialId,
+                warehouseId,
+                quantity,
+                operator,
+                date,
+                remark
+            });
+            
+            // 重置扫描区域
+            document.getElementById('scanMaterialId').textContent = '-';
+            document.getElementById('scanMaterialName').textContent = '-';
+            document.getElementById('scanSpecification').textContent = '-';
+            document.getElementById('scanCurrentStock').textContent = '-';
+            document.getElementById('scanQuantity').value = '1';
+            document.getElementById('confirmScanBtn').disabled = true;
+            document.getElementById('confirmScanBtn').removeAttribute('data-material-id');
+        };
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化数据
+            initData();
+            
+            // 设置默认日期
+            setDefaultDates();
+            
+            // 加载页面数据
+            loadMaterialsTable();
+            loadInventoryTable();
+            loadWarningTable();
+            loadRecentTransactions();
+            loadWarehousesTable();
+            loadTransactionHistory();
+            loadMaterialSelectors();
+            loadWarehouseSelectors();
+            
+            // 初始化仪表盘图表
+            initDashboardCharts();
+            
+            // 页面切换事件
+            document.querySelectorAll('nav a').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const pageId = link.getAttribute('data-page');
+                    switchPage(pageId);
+                });
+            });
+            
+            // 移动端侧边栏切换
+            document.getElementById('sidebarToggle').addEventListener('click', () => {
+                const mobileSidebar = document.getElementById('mobileSidebar');
+                const mobileSidebarContent = document.getElementById('mobileSidebarContent');
+                
+                mobileSidebar.classList.toggle('hidden');
+                mobileSidebarContent.classList.toggle('-translate-x-full');
+            });
+            
+            document.getElementById('closeSidebar').addEventListener('click', () => {
+                const mobileSidebar = document.getElementById('mobileSidebar');
+                const mobileSidebarContent = document.getElementById('mobileSidebarContent');
+                
+                mobileSidebar.classList.add('hidden');
+                mobileSidebarContent.classList.add('-translate-x-full');
+            });
+            
+            document.querySelectorAll('.mobile-nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const mobileSidebar = document.getElementById('mobileSidebar');
+                    const mobileSidebarContent = document.getElementById('mobileSidebarContent');
+                    
+                    mobileSidebar.classList.add('hidden');
+                    mobileSidebarContent.classList.add('-translate-x-full');
+                });
+            });
+            
+            // 出入库操作选项卡切换
+            document.querySelectorAll('[data-tab]').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    // 更新选项卡样式
+                    document.querySelectorAll('[data-tab]').forEach(t => {
+                        t.classList.remove('border-primary', 'text-primary');
+                        t.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    });
+                    
+                    tab.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    tab.classList.add('border-primary', 'text-primary');
+                    
+                    // 显示对应内容
+                    const tabId = tab.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    document.getElementById(`${tabId}Tab`).classList.remove('hidden');
+                });
+            });
+            
+            // 添加物料模态框
+            document.getElementById('addMaterialBtn').addEventListener('click', () => {
+                document.getElementById('addMaterialModal').classList.remove('hidden');
+            });
+            
+            document.getElementById('closeAddMaterialModal').addEventListener('click', () => {
+                document.getElementById('addMaterialModal').classList.add('hidden');
+            });
+            
+            document.getElementById('cancelAddMaterial').addEventListener('click', () => {
+                document.getElementById('addMaterialModal').classList.add('hidden');
+            });
+            
+            document.getElementById('addMaterialForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const materialData = {
+                    name: formData.get('name'),
+                    category: formData.get('category'),
+                    specification: formData.get('specification'),
+                    unit: formData.get('unit'),
+                    price: parseFloat(formData.get('price') || 0),
+                    manufacturer: formData.get('manufacturer'),
+                    barcode: formData.get('barcode'),
+                    minStock: parseInt(formData.get('minStock') || 0),
+                    remark: formData.get('remark')
+                };
+                
+                addMaterial(materialData);
+                
+                // 重置表单
+                e.target.reset();
+            });
+            
+            // 添加仓库模态框
+            document.getElementById('addWarehouseBtn').addEventListener('click', () => {
+                document.getElementById('addWarehouseModal').classList.remove('hidden');
+            });
+            
+            document.getElementById('closeAddWarehouseModal').addEventListener('click', () => {
+                document.getElementById('addWarehouseModal').classList.add('hidden');
+            });
+            
+            document.getElementById('cancelAddWarehouse').addEventListener('click', () => {
+                document.getElementById('addWarehouseModal').classList.add('hidden');
+            });
+            
+            document.getElementById('addWarehouseForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const warehouseData = {
+                    name: formData.get('name'),
+                    location: formData.get('location'),
+                    contactPerson: formData.get('contactPerson'),
+                    contactPhone: formData.get('contactPhone'),
+                    remark: formData.get('remark')
+                };
+                
+                addWarehouse(warehouseData);
+                
+                // 重置表单
+                e.target.reset();
+            });
+            
+            // 入库表单提交
+            document.getElementById('inboundForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const inboundData = {
+                    materialId: formData.get('materialId'),
+                    warehouseId: formData.get('warehouseId'),
+                    quantity: formData.get('quantity'),
+                    batch: formData.get('batch'),
+                    operator: formData.get('operator'),
+                    date: formData.get('date'),
+                    remark: formData.get('remark')
+                };
+                
+                handleInbound(inboundData);
+            });
+            
+            // 出库表单提交
+            document.getElementById('outboundForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const outboundData = {
+                    materialId: formData.get('materialId'),
+                    warehouseId: formData.get('warehouseId'),
+                    quantity: formData.get('quantity'),
+                    purpose: formData.get('purpose'),
+                    operator: formData.get('operator'),
+                    date: formData.get('date'),
+                    remark: formData.get('remark')
+                };
+                
+                handleOutbound(outboundData);
+            });
+            
+            // 调拨表单提交
+            document.getElementById('transferForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const transferData = {
+                    materialId: formData.get('materialId'),
+                    fromWarehouseId: formData.get('fromWarehouseId'),
+                    toWarehouseId: formData.get('toWarehouseId'),
+                    quantity: formData.get('quantity'),
+                    operator: formData.get('operator'),
+                    date: formData.get('date'),
+                    remark: formData.get('remark')
+                };
+                
+                handleTransfer(transferData);
+            });
+            
+            // 模拟条码扫描
+            document.getElementById('simulateScanBtn').addEventListener('click', simulateScan);
+            
+            // 确认扫描入库
+            document.getElementById('confirmScanBtn').addEventListener('click', confirmScanInbound);
+            
+            // 出库表单物料选择更新库存显示
+            document.getElementById('outboundMaterial').addEventListener('change', (e) => {
+                const materialId = e.target.value;
+                const warehouseId = document.getElementById('outboundWarehouse').value;
+                
+                if (materialId && warehouseId) {
+                    const inventory = getInventory();
+                    const stock = inventory.find(
+                        item => item.materialId === materialId && item.warehouseId === warehouseId
+                    );
+                    
+                    document.getElementById('currentStockDisplay').textContent = stock ? stock.quantity : 0;
+                } else {
+                    document.getElementById('currentStockDisplay').textContent = 0;
+                }
+            });
+            
+            document.getElementById('outboundWarehouse').addEventListener('change', (e) => {
+                const warehouseId = e.target.value;
+                const materialId = document.getElementById('outboundMaterial').value;
+                
+                if (materialId && warehouseId) {
+                    const inventory = getInventory();
+                    const stock = inventory.find(
+                        item => item.materialId === materialId && item.warehouseId === warehouseId
+                    );
+                    
+                    document.getElementById('currentStockDisplay').textContent = stock ? stock.quantity : 0;
+                } else {
+                    document.getElementById('currentStockDisplay').textContent = 0;
+                }
+            });
+            
+            // 调拨表单物料选择更新库存显示
+            document.getElementById('transferMaterial').addEventListener('change', (e) => {
+                const materialId = e.target.value;
+                const warehouseId = document.getElementById('fromWarehouse').value;
+                
+                if (materialId && warehouseId) {
+                    const inventory = getInventory();
+                    const stock = inventory.find(
+                        item => item.materialId === materialId && item.warehouseId === warehouseId
+                    );
+                    
+                    document.getElementById('transferCurrentStock').textContent = stock ? stock.quantity : 0;
+                } else {
+                    document.getElementById('transferCurrentStock').textContent = 0;
+                }
+            });
+            
+            document.getElementById('fromWarehouse').addEventListener('change', (e) => {
+                const warehouseId = e.target.value;
+                const materialId = document.getElementById('transferMaterial').value;
+                
+                if (materialId && warehouseId) {
+                    const inventory = getInventory();
+                    const stock = inventory.find(
+                        item => item.materialId === materialId && item.warehouseId === warehouseId
+                    );
+                    
+                    document.getElementById('transferCurrentStock').textContent = stock ? stock.quantity : 0;
+                } else {
+                    document.getElementById('transferCurrentStock').textContent = 0;
+                }
+            });
+            
+            // 生成报表按钮
+            document.getElementById('generateReportBtn').addEventListener('click', () => {
+                showToast('报表生成中，请稍候...');
+                
+                // 模拟报表生成延迟
+                setTimeout(() => {
+                    initReportCharts();
+                    showToast('报表生成成功');
+                }, 1000);
+            });
+            
+            // 导出报表按钮
+            document.getElementById('exportReportBtn').addEventListener('click', () => {
+                showToast('报表导出中，请稍候...');
+                
+                // 模拟导出延迟
+                setTimeout(() => {
+                    showToast('报表导出成功');
+                }, 1000);
+            });
+            
+            // 导出库存按钮
+            document.getElementById('exportInventoryBtn').addEventListener('click', () => {
+                showToast('库存数据导出中，请稍候...');
+                
+                // 模拟导出延迟
+                setTimeout(() => {
+                    showToast('库存数据导出成功');
+                }, 1000);
+            });
+            
+            // 导出历史记录按钮
+            document.getElementById('exportHistoryBtn').addEventListener('click', () => {
+                showToast('历史记录导出中，请稍候...');
+                
+                // 模拟导出延迟
+                setTimeout(() => {
+                    showToast('历史记录导出成功');
+                }, 1000);
+            });
+            
+            // 筛选物料按钮
+            document.getElementById('filterMaterialsBtn').addEventListener('click', () => {
+                showToast('筛选条件已应用');
+            });
+            
+            // 重置筛选按钮
+            document.getElementById('resetFilterBtn').addEventListener('click', () => {
+                document.getElementById('materialCategoryFilter').value = '';
+                document.getElementById('materialSearchInput').value = '';
+                showToast('筛选条件已重置');
+            });
+            
+            // 搜索框事件
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                // 这里可以实现全局搜索逻辑
+                if (searchTerm.length > 2) {
+                    showToast(`正在搜索: ${searchTerm}`);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
