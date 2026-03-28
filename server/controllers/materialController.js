@@ -349,3 +349,11 @@ const getMaterialCategories = async (req, res) => {
     });
   }
 };
+
+module.exports = {
+  getMaterials,
+  createMaterial,
+  updateMaterial,
+  deleteMaterial,
+  getMaterialCategories
+};

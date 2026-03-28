@@ -10,8 +10,153 @@
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <!-- Tailwind 配置 -->
     <script>
+        // 显示加载状态
+        const showLoading = (elementId) => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.classList.add('loading');
+                const overlay = document.createElement('div');
+                overlay.className = 'loading-overlay';
+                overlay.innerHTML = '<div class="loading-spinner"></div>';
+                overlay.id = `${elementId}-loading`;
+                element.appendChild(overlay);
+            }
+        };
+
+        // 隐藏加载状态
+        const hideLoading = (elementId) => {
+            const element = document.getElementById(elementId);
+            const overlay = document.getElementById(`${elementId}-loading`);
+            if (element) {
+                element.classList.remove('loading');
+            }
+            if (overlay) {
+                overlay.remove();
+            }
+        };
+
+        // 显示提示消息
+        const showToast = (message, type = 'success') => {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            
+            // 设置颜色
+            toast.className = toast.className.replace(/bg-\w+-500/, '');
+            if (type === 'error') {
+                toast.classList.add('bg-red-500');
+            } else if (type === 'warning') {
+                toast.classList.add('bg-yellow-500');
+            } else {
+                toast.classList.add('bg-green-500');
+            }
+            
+            // 显示
+            toast.classList.remove('translate-y-10', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            // 3秒后隐藏
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-10', 'opacity-0');
+            }, 3000);
+        };
+
+        // API 配置
+        const API_BASE_URL = 'http://localhost:3000/api'; // 后端服务地址，包含/api前缀
+        let isAuthenticated = true; // 模拟已登录状态
+
+        // 加载分类数据
+        const loadCategories = async () => {
+            try {
+                const response = await api.get('/categories');
+                if (response.code === 200) {
+                    const categories = response.data.items;
+                    const categorySelect = document.getElementById('materialCategory');
+                    
+                    // 清空现有选项
+                    categorySelect.innerHTML = '<option value="">请选择分类</option>';
+                    
+                    // 添加分类选项
+                    categories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.name;
+                        categorySelect.appendChild(option);
+                    });
+                    
+                    return categories;
+                }
+            } catch (error) {
+                console.error('加载分类数据失败:', error);
+                // 如果API失败，使用默认分类
+                const defaultCategories = ['电子元件', '机械零件', '实验耗材', '办公用品'];
+                const categorySelect = document.getElementById('materialCategory');
+                
+                defaultCategories.forEach((category, index) => {
+                    const option = document.createElement('option');
+                    option.value = index + 1;
+                    option.textContent = category;
+                    categorySelect.appendChild(option);
+                });
+            }
+        };
+
+        // API 请求封装
+        const api = axios.create({
+            baseURL: API_BASE_URL,
+            timeout: 10000,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // 请求拦截器
+        api.interceptors.request.use(config => {
+            // 如果有 token，添加到请求头
+            const token = localStorage.getItem('token');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+            return config;
+        });
+
+        // 响应拦截器
+        api.interceptors.response.use(response => {
+            return response.data;
+        }, error => {
+            console.error('API 请求错误:', error);
+            if (error.response) {
+                switch (error.response.status) {
+                    case 401:
+                        alert('请先登录');
+                        window.location.href = 'login.html';
+                        break;
+                    case 403:
+                        alert('权限不足');
+                        break;
+                    case 404:
+                        alert('接口不存在');
+                        break;
+                    case 500:
+                        alert('服务器内部错误');
+                        break;
+                    default:
+                        alert('请求失败: ' + (error.response.data.message || '未知错误'));
+                }
+            } else if (error.request) {
+                alert('网络连接失败，请检查服务器是否运行');
+            } else {
+                alert('请求配置错误: ' + error.message);
+            }
+            return Promise.reject(error);
+        });
+
         tailwind.config = {
             theme: {
                 extend: {
@@ -43,6 +188,15 @@
                 transition-property: all;
                 transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
                 transition-duration: 150ms;
+            }
+            .loading {
+                @apply opacity-50 pointer-events-none;
+            }
+            .loading-overlay {
+                @apply absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-10;
+            }
+            .loading-spinner {
+                @apply w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin;
             }
         }
     </style>
@@ -1381,12 +1535,9 @@
                         </div>
                         <div>
                             <label for="materialCategory" class="block text-sm font-medium text-gray-700 mb-1">分类 <span class="text-red-500">*</span></label>
-                            <select id="materialCategory" name="category" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+                            <select id="materialCategory" name="category_id" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
                                 <option value="">请选择分类</option>
-                                <option value="电子元件">电子元件</option>
-                                <option value="机械零件">机械零件</option>
-                                <option value="实验耗材">实验耗材</option>
-                                <option value="办公用品">办公用品</option>
+                                <!-- 分类选项将通过JavaScript动态加载 -->
                             </select>
                         </div>
                         <div>
@@ -1398,12 +1549,16 @@
                             <input type="text" id="materialUnit" name="unit" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
                         </div>
                         <div>
-                            <label for="materialPrice" class="block text-sm font-medium text-gray-700 mb-1">单价</label>
-                            <input type="number" id="materialPrice" name="price" min="0" step="0.01" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                            <label for="materialSKU" class="block text-sm font-medium text-gray-700 mb-1">货号(SKU)</label>
+                            <input type="text" id="materialSKU" name="sku" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
                         </div>
                         <div>
                             <label for="materialManufacturer" class="block text-sm font-medium text-gray-700 mb-1">生产厂家</label>
                             <input type="text" id="materialManufacturer" name="manufacturer" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="materialSN" class="block text-sm font-medium text-gray-700 mb-1">序列号(SN)</label>
+                            <input type="text" id="materialSN" name="sn" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
                         </div>
                         <div>
                             <label for="materialBarcode" class="block text-sm font-medium text-gray-700 mb-1">条码</label>
@@ -3378,6 +3533,181 @@
                 showToast('筛选条件已重置');
             });
             
+            // 表单提交事件处理
+            
+            // 添加物料表单
+            document.getElementById('addMaterialForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const formData = new FormData(e.target);
+                    const materialData = {
+                        name: formData.get('name'),
+                        category_id: formData.get('category_id'),
+                        specification: formData.get('specification'),
+                        unit: formData.get('unit'),
+                        manufacturer: formData.get('manufacturer'),
+                        barcode: formData.get('barcode'),
+                        sku: formData.get('sku'),
+                        sn: formData.get('sn'),
+                        min_stock: parseInt(formData.get('minStock')) || 0,
+                        remark: formData.get('remark')
+                    };
+
+                    const response = await api.post('/materials', materialData);
+                    if (response.code === 201) {
+                        showToast('物料添加成功');
+                        e.target.reset();
+                        document.getElementById('closeAddMaterialModal').click();
+                        // 重新加载数据
+                        await loadMaterialsFromApi();
+                        // 重新渲染相关表格
+                        loadMaterialsTable();
+                        loadMaterialSelectors();
+                    }
+                } catch (error) {
+                    console.error('添加物料失败:', error);
+                    showToast('添加物料失败', 'error');
+                }
+            });
+
+            // 添加仓库表单
+            document.getElementById('addWarehouseForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const formData = new FormData(e.target);
+                    const warehouseData = {
+                        name: formData.get('name'),
+                        location: formData.get('location'),
+                        contact_person: formData.get('contactPerson'),
+                        contact_phone: formData.get('contactPhone'),
+                        remark: formData.get('remark')
+                    };
+
+                    const response = await api.post('/warehouses', warehouseData);
+                    if (response.code === 201) {
+                        showToast('仓库添加成功');
+                        e.target.reset();
+                        document.getElementById('closeAddWarehouseModal').click();
+                        // 重新加载数据
+                        await loadWarehousesFromApi();
+                        // 重新渲染相关表格
+                        loadWarehousesTable();
+                    }
+                } catch (error) {
+                    console.error('添加仓库失败:', error);
+                    showToast('添加仓库失败', 'error');
+                }
+            });
+
+            // 入库表单
+            document.getElementById('inboundForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const formData = new FormData(e.target);
+                    const transactionData = {
+                        type: 'in',
+                        material_id: formData.get('material'),
+                        to_warehouse_id: formData.get('warehouse'),
+                        quantity: parseInt(formData.get('quantity')),
+                        operator: formData.get('operator'),
+                        purpose: formData.get('purpose')
+                    };
+
+                    const response = await api.post('/transactions', transactionData);
+                    if (response.code === 201) {
+                        showToast('入库操作成功');
+                        e.target.reset();
+                        document.getElementById('closeInboundModal').click();
+                        // 重新加载数据
+                        await Promise.all([
+                            loadInventoryFromApi(),
+                            loadTransactionsFromApi()
+                        ]);
+                        // 重新渲染相关表格
+                        loadInventoryTable();
+                        loadTransactionHistory();
+                        loadRecentTransactions();
+                        initDashboard();
+                    }
+                } catch (error) {
+                    console.error('入库操作失败:', error);
+                    showToast('入库操作失败', 'error');
+                }
+            });
+
+            // 出库表单
+            document.getElementById('outboundForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const formData = new FormData(e.target);
+                    const transactionData = {
+                        type: 'out',
+                        material_id: formData.get('material'),
+                        from_warehouse_id: formData.get('warehouse'),
+                        quantity: parseInt(formData.get('quantity')),
+                        operator: formData.get('operator'),
+                        purpose: formData.get('purpose')
+                    };
+
+                    const response = await api.post('/transactions', transactionData);
+                    if (response.code === 201) {
+                        showToast('出库操作成功');
+                        e.target.reset();
+                        document.getElementById('closeOutboundModal').click();
+                        // 重新加载数据
+                        await Promise.all([
+                            loadInventoryFromApi(),
+                            loadTransactionsFromApi()
+                        ]);
+                        // 重新渲染相关表格
+                        loadInventoryTable();
+                        loadTransactionHistory();
+                        loadRecentTransactions();
+                        initDashboard();
+                    }
+                } catch (error) {
+                    console.error('出库操作失败:', error);
+                    showToast('出库操作失败', 'error');
+                }
+            });
+
+            // 调拨表单
+            document.getElementById('transferForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const formData = new FormData(e.target);
+                    const transactionData = {
+                        type: 'transfer',
+                        material_id: formData.get('material'),
+                        from_warehouse_id: formData.get('fromWarehouse'),
+                        to_warehouse_id: formData.get('toWarehouse'),
+                        quantity: parseInt(formData.get('quantity')),
+                        operator: formData.get('operator'),
+                        purpose: formData.get('purpose')
+                    };
+
+                    const response = await api.post('/transactions', transactionData);
+                    if (response.code === 201) {
+                        showToast('调拨操作成功');
+                        e.target.reset();
+                        document.getElementById('closeTransferModal').click();
+                        // 重新加载数据
+                        await Promise.all([
+                            loadInventoryFromApi(),
+                            loadTransactionsFromApi()
+                        ]);
+                        // 重新渲染相关表格
+                        loadInventoryTable();
+                        loadTransactionHistory();
+                        loadRecentTransactions();
+                        initDashboard();
+                    }
+                } catch (error) {
+                    console.error('调拨操作失败:', error);
+                    showToast('调拨操作失败', 'error');
+                }
+            });
+
             // 搜索框事件
             document.getElementById('searchInput').addEventListener('input', (e) => {
                 const searchTerm = e.target.value.toLowerCase();
@@ -3386,6 +3716,136 @@
                     showToast(`正在搜索: ${searchTerm}`);
                 }
             });
+
+            // 初始化数据（从API加载）
+            const initData = async () => {
+                try {
+                    showLoading('dashboardContent');
+                    
+                    // 并行加载所有数据
+                    await Promise.all([
+                        loadCategories(),
+                        loadMaterialsFromApi(),
+                        loadInventoryFromApi(),
+                        loadWarehousesFromApi(),
+                        loadTransactionsFromApi()
+                    ]);
+                    
+                    hideLoading('dashboardContent');
+                    showToast('数据加载成功');
+                } catch (error) {
+                    console.error('初始化数据失败:', error);
+                    hideLoading('dashboardContent');
+                    showToast('数据加载失败，使用本地缓存数据', 'warning');
+                    initLocalData();
+                }
+            };
+
+            // 从API加载物料数据
+            const loadMaterialsFromApi = async () => {
+                try {
+                    const response = await api.get('/materials');
+                    if (response.code === 200) {
+                        const materials = response.data.items.map(item => ({
+                            id: item.id,
+                            name: item.name,
+                            category: item.Category ? item.Category.name : '未分类',
+                            category_id: item.category_id,
+                            specification: item.specification,
+                            unit: item.unit,
+                            manufacturer: item.manufacturer,
+                            barcode: item.barcode,
+                            sku: item.sku,
+                            sn: item.sn,
+                            minStock: item.min_stock,
+                            remark: item.remark,
+                            createdAt: new Date(item.created_at),
+                            updatedAt: new Date(item.updated_at)
+                        }));
+                        localStorage.setItem('materials', JSON.stringify(materials));
+                        return materials;
+                    }
+                } catch (error) {
+                    console.error('加载物料数据失败:', error);
+                    throw error;
+                }
+            };
+
+            // 从API加载库存数据
+            const loadInventoryFromApi = async () => {
+                try {
+                    const response = await api.get('/inventory');
+                    if (response.code === 200) {
+                        const inventory = response.data.items.map(item => ({
+                            id: item.id,
+                            materialId: item.material_id,
+                            warehouseId: item.warehouse_id,
+                            quantity: item.quantity,
+                            updatedAt: new Date(item.updated_at)
+                        }));
+                        localStorage.setItem('inventory', JSON.stringify(inventory));
+                        return inventory;
+                    }
+                } catch (error) {
+                    console.error('加载库存数据失败:', error);
+                    throw error;
+                }
+            };
+
+            // 从API加载仓库数据
+            const loadWarehousesFromApi = async () => {
+                try {
+                    const response = await api.get('/warehouses');
+                    if (response.code === 200) {
+                        const warehouses = response.data.items.map(item => ({
+                            id: item.id,
+                            name: item.name,
+                            location: item.location,
+                            contactPerson: item.contact_person,
+                            contactPhone: item.contact_phone,
+                            remark: item.remark,
+                            createdAt: new Date(item.created_at),
+                            updatedAt: new Date(item.updated_at)
+                        }));
+                        localStorage.setItem('warehouses', JSON.stringify(warehouses));
+                        return warehouses;
+                    }
+                } catch (error) {
+                    console.error('加载仓库数据失败:', error);
+                    throw error;
+                }
+            };
+
+            // 从API加载交易数据
+            const loadTransactionsFromApi = async () => {
+                try {
+                    const response = await api.get('/transactions');
+                    if (response.code === 200) {
+                        const transactions = response.data.items.map(item => ({
+                            id: item.id,
+                            type: item.type,
+                            materialId: item.material_id,
+                            fromWarehouseId: item.from_warehouse_id,
+                            toWarehouseId: item.to_warehouse_id,
+                            quantity: item.quantity,
+                            operator: item.operator,
+                            purpose: item.purpose,
+                            createdAt: new Date(item.created_at)
+                        }));
+                        localStorage.setItem('transactions', JSON.stringify(transactions));
+                        return transactions;
+                    }
+                } catch (error) {
+                    console.error('加载交易数据失败:', error);
+                    throw error;
+                }
+            };
+
+            // 获取数据的辅助函数
+            const getMaterials = () => JSON.parse(localStorage.getItem('materials') || '[]');
+            const getInventory = () => JSON.parse(localStorage.getItem('inventory') || '[]');
+            const getWarehouses = () => JSON.parse(localStorage.getItem('warehouses') || '[]');
+            const getTransactions = () => JSON.parse(localStorage.getItem('transactions') || '[]');
         });
     </script>
 </body>

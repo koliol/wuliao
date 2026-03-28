@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <!-- Tailwind 配置 -->
     <script>
         tailwind.config = {
@@ -135,6 +137,18 @@
     </div>
 
     <script>
+        // API 配置
+        const API_BASE_URL = 'http://localhost:3000/api';
+        
+        // 创建axios实例
+        const api = axios.create({
+            baseURL: API_BASE_URL,
+            timeout: 10000,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
         // 切换密码可见性
         const togglePassword = document.getElementById('togglePassword');
         const password = document.getElementById('password');
@@ -177,29 +191,17 @@
             errorMessage.classList.add('hidden');
             
             try {
-                // 模拟登录请求
-                // 在实际应用中，这里应该发送真实的API请求
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // 发送真实的登录API请求
+                const response = await api.post('/auth/login', {
+                    username,
+                    password
+                });
                 
-                // 模拟登录成功（实际应用中应该根据API响应判断）
-                if (username === 'admin' && password === 'admin123') {
-                    // 保存token到localStorage
-                    localStorage.setItem('token', 'mock-jwt-token');
-                    localStorage.setItem('user', JSON.stringify({
-                        id: 1,
-                        username: 'admin',
-                        name: '系统管理员',
-                        role: 'admin',
-                        permissions: [
-                            'user:view', 'user:create', 'user:edit', 'user:delete', 'user:reset_password',
-                            'material:view', 'material:create', 'material:edit', 'material:delete', 'material:import', 'material:export',
-                            'warehouse:view', 'warehouse:create', 'warehouse:edit', 'warehouse:delete',
-                            'inventory:view', 'inventory:adjust', 'inventory:export',
-                            'transaction:inbound', 'transaction:outbound', 'transaction:transfer', 'transaction:view', 'transaction:export',
-                            'report:view', 'report:export',
-                            'system:backup', 'system:restore', 'system:setting'
-                        ]
-                    }));
+                // 检查响应状态
+                if (response.code === 200 && response.data && response.data.token) {
+                    // 保存token和用户信息到localStorage
+                    localStorage.setItem('token', response.data.token);
+                    localStorage.setItem('user', JSON.stringify(response.data.user));
                     
                     // 记住我功能
                     if (remember) {
@@ -211,7 +213,31 @@
                     // 跳转到主页
                     window.location.href = 'index.html';
                 } else {
-                    showError('用户名或密码错误');
+                    showError(response.message || '登录失败，请检查用户名和密码');
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                if (error.response) {
+                    // 服务器返回了错误响应
+                    switch (error.response.status) {
+                        case 401:
+                            showError('用户名或密码错误');
+                            break;
+                        case 403:
+                            showError('账户已被禁用');
+                            break;
+                        case 500:
+                            showError('服务器内部错误，请稍后重试');
+                            break;
+                        default:
+                            showError(error.response.data?.message || '登录失败，请稍后重试');
+                    }
+                } else if (error.request) {
+                    // 请求已发送但没有收到响应
+                    showError('网络连接失败，请检查服务器是否运行');
+                } else {
+                    // 请求配置错误
+                    showError('请求错误: ' + error.message);
                 }
             } catch (error) {
                 console.error('登录错误:', error);

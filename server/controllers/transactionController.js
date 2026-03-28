@@ -442,3 +442,10 @@ function generateTransactionId() {
   const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
   return `T${year}${month}${day}${random}`;
 }
+
+module.exports = {
+  getTransactions,
+  inbound,
+  outbound,
+  transfer
+};
